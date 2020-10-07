@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 
+#define TIMEOUT 3
 int flag=1, conta=1;
 
 void atende()                   // atende alarme
@@ -19,7 +20,7 @@ main()
 
 while(conta < 4){
    if(flag){
-      alarm(3);                 // activa alarme de 3s
+      alarm(TIMEOUT);                 // activa alarme de 3s
       flag=0;
    }
 }
