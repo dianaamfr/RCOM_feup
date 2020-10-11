@@ -6,21 +6,40 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "types.h"
 #include "utils.h"
 
 
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1  /* POSIX compliant source */
 
+#define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
+#define C_SET   0x03         /* Set up control */
+#define FLAG    0x7E         /* Flag que delimita as tramas */
+
+/* Envio da trama SET */
+void sendSet(int fd) {
+  unsigned char buf[5]; /* trama SET */
+  int n;
+  
+  buf[0] = FLAG;
+  buf[1] = A;
+  buf[2] = C_SET;
+  buf[3] = buf[1] ^ buf[2];
+  buf[4] = FLAG;
+
+  for(int i = 0; i < sizeof(buf);) {
+    n = write(fd, buf, sizeof(buf));
+    i += n;
+    printf("Bytes sent: %d/%zu.\n", i, sizeof(buf));
+  }
+
+}
 
 int main(int argc, char** argv) {
 
   int fd,c, res;
   struct termios oldtio,newtio;
   int i, sum = 0, speed = 0;
-
-  unsigned char setMsg[5]; /* trama SET */
     
   /*if ( (argc < 2) || 
         ((strcmp("/dev/ttyS0", argv[1])!=0) && 
@@ -71,10 +90,12 @@ int main(int argc, char** argv) {
   
 
   printf("New termios structure set\n");
-  /* TODO - Definir e enviar trama SET para a porta de serie */
-  res = write(fd, setMsg, 5);   
-  printf("%d bytes written\n", res);
- 
+  
+  /* TODO Implementar o mecanismo de retransmissão, do lado do Emissor, com time-out. */
+  
+  sendSet(fd);/* Enviar trama SET para a porta de serie */
+
+  /* TODO - receiveUa(fd);*/
 
   if (tcsetattr(fd,TCSANOW,&oldtio) == -1) {
     perror("tcsetattr");
