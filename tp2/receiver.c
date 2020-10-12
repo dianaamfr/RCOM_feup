@@ -12,59 +12,73 @@
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1    /* POSIX compliant source */
 
+#define A  0x03           /* Campo de Endereço em Comandos enviados pelo Emissor */
+#define C_UA  0x07        /* Unnumbered Acknowledgment control */
+#define C_SET   0x03      /* Set up control */
+#define FLAG  0x7E        /* Flag que delimita as tramas */
+
 /* Maquina de estados para receber a trama SET, lida da porta de serie */
-void setReceive(int fd) {
+void receiveSet(int fd) {
 
   setRcvState setState = START;
-  unsigned char c, bcc;
-  int nr;
+  unsigned char ch, bcc = 0;
+  int nr, total = 0;  
 
   while(TRUE) {
 
-    tcflush(fd, TCIOFLUSH);
-
-    nr = read(fd, &c, 1);                  
-    printf("c = %c\n", c); /* Mostrar uchar lida*/
+    if(setState != OTHER_RCV && setState != STOP){
+      nr = read(fd, &ch, 1);
+      if(nr > 0){
+        total += nr;
+        printf("Byte read: %x, %d/5\n",ch, total);
+      }
+    }                  
 
     switch(setState) {
       case START:
-        if (c == FLAG)
+        if (ch == FLAG){
+          bcc = 0;
           setState = FLAG_RCV;
+        }
         else
           setState = OTHER_RCV;
         break;
 
       case FLAG_RCV:
-        if (c == A_CMD_E){
+        if (ch == A){
+          printf("Flag\n");
           setState = A_RCV;
-          bcc ^= c;
+          bcc ^= ch;
         }
-        else if (c != FLAG)
+        else if (ch != FLAG)
           setState = OTHER_RCV;
         break;
 
       case A_RCV:
-        if (c == C_SET){
+        printf("A \n");
+        if (ch == C_SET){
           setState = C_RCV;
-          bcc ^= c;
+          bcc ^= ch;
         }
-        else if (c != FLAG)
+        else if (ch != FLAG)
           setState = OTHER_RCV;
         else
           setState = FLAG_RCV;
         break;
 
       case C_RCV:
-        if (c == FLAG)
+        printf("C\n");
+        if (ch == FLAG)
           setState = FLAG_RCV;
-        else if (c == bcc)
+        else if (ch == bcc)
           setState = BCC_OK;
         else
           setState = OTHER_RCV;  
         break;
 
       case BCC_OK:
-        if(c == FLAG) 
+        printf("BCC OK\n");
+        if(ch == FLAG) 
           setState = STOP;
         break;
 
@@ -75,6 +89,25 @@ void setReceive(int fd) {
       case STOP:
         return;
     }
+  }
+
+  printf("Received SET message with success\n");
+}
+
+/* Envio da trama UA - unnumbered acknowledgment; para indicar que a trama SET foi bem recebida */
+void sendUa(int fd) {
+  unsigned char buf[5];
+  int n;
+
+  buf[0] = FLAG;
+  buf[1] = A;
+  buf[2] = C_UA;
+  buf[3] = buf[1] ^ buf[3];
+  buf[4] = FLAG;
+
+  for(int i = 0; i < sizeof(buf);) {
+    n = write(fd, buf, sizeof(buf));
+    i += n;
   }
 
 }
@@ -124,6 +157,8 @@ int main(int argc, char** argv) {
   newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
   newtio.c_cc[VMIN] = 0;  /* sets the minimum number of characters to receive before satisfying the read. */
 
+  tcflush(fd, TCIOFLUSH);
+
   if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
@@ -131,9 +166,10 @@ int main(int argc, char** argv) {
 
   printf("New termios structure set\n");
 
-  setReceive(fd); /* Espera por trama SET*/
-
-  /* TODO - Envia resposta UA para a porta de serie */
+  receiveSet(fd); /* Espera por trama SET*/
+  
+  sendUa(fd); /* Envia resposta UA para a porta de serie */
+  
 
   tcsetattr(fd,TCSANOW,&oldtio);
   close(fd);

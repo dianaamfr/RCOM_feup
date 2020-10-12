@@ -6,25 +6,57 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "types.h"
 #include "utils.h"
 #include <signal.h>
 
 
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1  /* POSIX compliant source */
+#define TIMEOUT           3
 
-int cnt=1;
-int flag=1;
+#define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
+#define C_SET   0x03         /* Set up control */
+#define FLAG    0x7E         /* Flag que delimita as tramas */
+
+/* Envio da trama SET */
+void sendSet(int fd) {
+  unsigned char SET[5]; /* trama SET */
+  int n;
+  
+  SET[0] = FLAG;
+  SET[1] = A;
+  SET[2] = C_SET;
+  SET[3] = SET[1] ^ SET[2];
+  SET[4] = FLAG;
+
+  for(int i = 0; i < sizeof(SET);) {
+    n = write(fd, SET, sizeof(SET));
+    i += n;
+    printf("Bytes sent: %d/%zu.\n", i, sizeof(SET));
+  }
+  for (int i = 0; i < 5; i++){  
+      printf("%4X ", SET[i]);
+    }
+    printf("\n");
+
+}
+
+int check_protection(char trama[]){
+  char bcc = trama[1] ^ trama[2];
+  if(bcc == trama[3]) return TRUE;
+  else return FALSE;
+}
+
+int flag=1, cnt=1;
 
 void alarmhandler(){
-	if(cnt <= 3){
-    printf("#%d: Return message not received, waiting 3 more seconds..\n", cnt);
+  if(cnt <= 3){
+    printf("Didnt receive, waiting 3 seconds..\n");
     flag=1;
     cnt++;
   }
   else{
-    printf("[EXITING]\n Remote App couldnt establish communication, aborting\n");
+    printf("Aborting\n");
     exit(-1);
   }
   alarm(3);
@@ -34,11 +66,9 @@ int main(int argc, char** argv) {
 
   signal(SIGALRM,alarmhandler);
 
-  int fd,c, res;
+  int fd, c, res;
   struct termios oldtio,newtio;
   int i, sum = 0, speed = 0;
-
-  unsigned char setMsg[5]; /* trama SET */
     
   /*if ( (argc < 2) || 
         ((strcmp("/dev/ttyS0", argv[1])!=0) && 
@@ -88,27 +118,46 @@ int main(int argc, char** argv) {
   }
   
   printf("New termios structure set\n");
+  
+  /* TODO Implementar o mecanismo de retransmissão, do lado do Emissor, com time-out. */
+  
+  /* Enviar trama SET para a porta de serie */
+  sendSet(fd);
 
+  /* TODO - receiveUa(fd);*/
 
-  /* TODO - Definir e enviar trama SET para a porta de serie : */
+  alarm(TIMEOUT);
 
-  enum address add;
-  enum control ctrl;
+  int n;
+  int count=0;
+  unsigned char buf[255];
 
-  char SET[5] = {FLAG,FLAG};
+  char trama[255];
+  bzero(trama, sizeof(trama));
+  int pos=0;
 
+  while(count<5){
+    n=read(fd,buf,1);
+    buf[n]=0;
+    trama[pos]=buf[0];
+    count+=1;
+  }
 
-  res = write(fd, SET, sizeof(SET));
-  printf("%d bytes written\n", res);
- 
-  int count = 0; 
-  alarm(3);          
+  printf("UA:");
+  for (int i = 0; i < 5; i++){
+      printf("%4X ", trama[i]);
+  }
+  printf("received\n");
 
+  if(check_protection(trama)==1){
+    printf("BBC check error\n");
+    exit(-1);
+  }
+  else{
+    printf("BBC CORRECT\n");
+  }
 
-
-
-
-
+  sleep(2);
 
   if (tcsetattr(fd,TCSANOW,&oldtio) == -1) {
     perror("tcsetattr");
