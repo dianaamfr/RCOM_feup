@@ -8,13 +8,31 @@
 #include <string.h>
 #include "types.h"
 #include "utils.h"
+#include <signal.h>
 
 
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1  /* POSIX compliant source */
 
+int cnt=1;
+int flag=1;
+
+void alarmhandler(){
+	if(cnt <= 3){
+    printf("#%d: Return message not received, waiting 3 more seconds..\n", cnt);
+    flag=1;
+    cnt++;
+  }
+  else{
+    printf("[EXITING]\n Remote App couldnt establish communication, aborting\n");
+    exit(-1);
+  }
+  alarm(3);
+}
 
 int main(int argc, char** argv) {
+
+  signal(SIGALRM,alarmhandler);
 
   int fd,c, res;
   struct termios oldtio,newtio;
@@ -59,7 +77,7 @@ int main(int argc, char** argv) {
   */
 
   newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 0;  /* sets the minimum number of characters to receive before satisfying the read. */
+  newtio.c_cc[VMIN] = 1;  /* sets the minimum number of characters to receive before satisfying the read. */
 
 
   tcflush(fd, TCIOFLUSH);
@@ -69,12 +87,28 @@ int main(int argc, char** argv) {
     exit(-1);
   }
   
-
   printf("New termios structure set\n");
-  /* TODO - Definir e enviar trama SET para a porta de serie */
-  res = write(fd, setMsg, 5);   
+
+
+  /* TODO - Definir e enviar trama SET para a porta de serie : */
+
+  enum address add;
+  enum control ctrl;
+
+  char SET[5] = {FLAG,FLAG};
+
+
+  res = write(fd, SET, sizeof(SET));
   printf("%d bytes written\n", res);
  
+  int count = 0; 
+  alarm(3);          
+
+
+
+
+
+
 
   if (tcsetattr(fd,TCSANOW,&oldtio) == -1) {
     perror("tcsetattr");
