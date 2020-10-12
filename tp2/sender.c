@@ -19,6 +19,8 @@
 #define C_SET   0x03         /* Set up control */
 #define FLAG    0x7E         /* Flag que delimita as tramas */
 
+int tentativas=0, fd;
+
 
 /* Envio da trama SET */
 void sendSet(int fd) {
@@ -43,18 +45,17 @@ void sendSet(int fd) {
 
 }
 
-int tentativas=0;
-
 void alarmhandler(){
   if(tentativas < MAX_RETR){
+    sendSet(fd);
     printf("Didnt receive, waiting 3 seconds..\n");
-    tentativas++;
+    alarm(3);
   }
   else{
     printf("Aborting\n");
     exit(-1);
   }
-  alarm(3);
+  tentativas++;
 }
 
 
@@ -69,7 +70,7 @@ int main(int argc, char** argv) {
 
   signal(SIGALRM,alarmhandler);
 
-  int fd, c, res;
+  int  c, res;
   struct termios oldtio,newtio;
   int i, sum = 0, speed = 0;
     
@@ -125,7 +126,7 @@ int main(int argc, char** argv) {
   /* TODO Implementar o mecanismo de retransmissão, do lado do Emissor, com time-out. */
   
   /* Enviar trama SET para a porta de serie */
-  sendSet(fd);
+ // sendSet(fd);
 
   /* TODO - receiveUa(fd);*/
 
