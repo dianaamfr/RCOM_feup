@@ -13,10 +13,12 @@
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1  /* POSIX compliant source */
 #define TIMEOUT           3
+#define MAX_RETR          3
 
 #define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
 #define C_SET   0x03         /* Set up control */
 #define FLAG    0x7E         /* Flag que delimita as tramas */
+
 
 /* Envio da trama SET */
 void sendSet(int fd) {
@@ -36,24 +38,17 @@ void sendSet(int fd) {
   }
   for (int i = 0; i < 5; i++){  
       printf("%4X ", SET[i]);
-    }
-    printf("\n");
+  }
+  printf("\n");
 
 }
 
-int check_protection(char trama[]){
-  char bcc = trama[1] ^ trama[2];
-  if(bcc == trama[3]) return TRUE;
-  else return FALSE;
-}
-
-int flag=1, cnt=1;
+int tentativas=0;
 
 void alarmhandler(){
-  if(cnt <= 3){
+  if(tentativas < MAX_RETR){
     printf("Didnt receive, waiting 3 seconds..\n");
-    flag=1;
-    cnt++;
+    tentativas++;
   }
   else{
     printf("Aborting\n");
@@ -61,6 +56,14 @@ void alarmhandler(){
   }
   alarm(3);
 }
+
+
+int check_protection(char trama[]){
+  char bcc = trama[1] ^ trama[2];
+  if(bcc == trama[3]) return TRUE;
+  else return FALSE;
+}
+
 
 int main(int argc, char** argv) {
 
