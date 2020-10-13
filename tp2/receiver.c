@@ -9,6 +9,7 @@
 #include "types.h"
 #include "utils.h"
 
+
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1    /* POSIX compliant source */
 
@@ -17,21 +18,24 @@
 #define C_SET   0x03      /* Set up control */
 #define FLAG  0x7E        /* Flag que delimita as tramas */
 
-/* Maquina de estados para receber a trama SET, lida da porta de serie */
+
+/**
+ *  Rececao da trama SET
+ * 
+ * @param fd descritor da porta de serie
+*/
 void receiveSet(int fd) {
 
-  setRcvState setState = START;
+  state setState = START;
   unsigned char ch, bcc = 0;
-  int nr, total = 0;  
+  int nr;  
 
   while(TRUE) {
 
     if(setState != OTHER_RCV && setState != STOP){
       nr = read(fd, &ch, 1);
-      if(nr > 0){
-        total += nr;
-        printf("Byte read: %x, %d/5\n",ch, total);
-      }
+      if(nr > 0)
+        printf("Byte read: %x\n",ch);
     }                  
 
     switch(setState) {
@@ -46,7 +50,6 @@ void receiveSet(int fd) {
 
       case FLAG_RCV:
         if (ch == A){
-          printf("Flag\n");
           setState = A_RCV;
           bcc ^= ch;
         }
@@ -55,7 +58,6 @@ void receiveSet(int fd) {
         break;
 
       case A_RCV:
-        printf("A \n");
         if (ch == C_SET){
           setState = C_RCV;
           bcc ^= ch;
@@ -67,7 +69,6 @@ void receiveSet(int fd) {
         break;
 
       case C_RCV:
-        printf("C\n");
         if (ch == FLAG)
           setState = FLAG_RCV;
         else if (ch == bcc)
@@ -77,7 +78,6 @@ void receiveSet(int fd) {
         break;
 
       case BCC_OK:
-        printf("BCC OK\n");
         if(ch == FLAG) 
           setState = STOP;
         break;
@@ -87,30 +87,39 @@ void receiveSet(int fd) {
         break;
 
       case STOP:
+        printf("Received SET message with success\n");
         return;
     }
   }
-
-  printf("Received SET message with success\n");
 }
 
-/* Envio da trama UA - unnumbered acknowledgment; para indicar que a trama SET foi bem recebida */
+
+/**
+ *  Envio da trama UA
+ * 
+ * @param fd descritor da porta de serie
+*/
 void sendUa(int fd) {
   unsigned char buf[5];
   int n;
-
+  
   buf[0] = FLAG;
   buf[1] = A;
   buf[2] = C_UA;
-  buf[3] = buf[1] ^ buf[3];
+  buf[3] = buf[1] ^ buf[2];
   buf[4] = FLAG;
+
+  tcflush(fd, TCIOFLUSH);
 
   for(int i = 0; i < sizeof(buf);) {
     n = write(fd, buf, sizeof(buf));
     i += n;
   }
 
+  printf("Sent UA message with success\n");
+
 }
+
 
 int main(int argc, char** argv) {
 
@@ -170,7 +179,7 @@ int main(int argc, char** argv) {
   
   sendUa(fd); /* Envia resposta UA para a porta de serie */
   
-
+  
   tcsetattr(fd,TCSANOW,&oldtio);
   close(fd);
   return 0;

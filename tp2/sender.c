@@ -6,21 +6,46 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "utils.h"
 #include <signal.h>
+#include "types.h"
+#include "utils.h"
 
 
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1  /* POSIX compliant source */
-#define TIMEOUT           3
-#define MAX_RETR          3
+
+#define TIMEOUT           3   
+#define MAX_RETR          3   
 
 #define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
+#define C_UA    0x07        /* Unnumbered Acknowledgment control */
 #define C_SET   0x03         /* Set up control */
 #define FLAG    0x7E         /* Flag que delimita as tramas */
 
+unsigned int tries = 0;     /* Numero de tentativas usadas para retransmissao do comando SET e espera do UA */
+unsigned int alarmWentOff = FALSE; /* Flag para assinalar se o alarme foi disparado porque passou o tempo TIMEOUT */
 
-/* Envio da trama SET */
+/**
+ * Handler para o sinal SIGALARM
+ * 
+ * Assinala que o alarme foi acionado através da flag alarmWentOff e incrementa o numero de tentativas
+ * 
+ * @param sig sinal recebido
+*/
+void alarmhandler(int sig){
+  tries++;
+  alarmWentOff = TRUE; /* Assinala que o alarme foi accionado */
+
+  printf("\nTimeout! Tries used: %d \n", tries);
+  return;
+}
+
+
+/**
+ *  Envio da trama SET
+ * 
+ * @param fd descritor da porta de serie
+*/
 void sendSet(int fd) {
   unsigned char SET[5]; /* trama SET */
   int n;
@@ -31,43 +56,104 @@ void sendSet(int fd) {
   SET[3] = SET[1] ^ SET[2];
   SET[4] = FLAG;
 
+  tcflush(fd, TCIOFLUSH);
+
   for(int i = 0; i < sizeof(SET);) {
     n = write(fd, SET, sizeof(SET));
     i += n;
     printf("Bytes sent: %d/%zu.\n", i, sizeof(SET));
   }
-  for (int i = 0; i < 5; i++){  
+
+  for (int i = 0; i < sizeof(SET); i++){  
       printf("%4X ", SET[i]);
   }
   printf("\n");
-
-}
-
-int tentativas=0;
-
-void alarmhandler(){
-  if(tentativas < MAX_RETR){
-    printf("Didnt receive, waiting 3 seconds..\n");
-    tentativas++;
-  }
-  else{
-    printf("Aborting\n");
-    exit(-1);
-  }
-  alarm(3);
+  
 }
 
 
-int check_protection(char trama[]){
-  char bcc = trama[1] ^ trama[2];
-  if(bcc == trama[3]) return TRUE;
-  else return FALSE;
+/**
+ *  Maquina de estados para receber a trama UA lida da porta de serie 
+ * 
+ * @param fd descritor da porta de serie
+*/
+int receiveUa(int fd) {
+
+  state uaState = START;
+  unsigned char ch, bcc = 0;
+  int nr;  
+
+  printf("Bytes read: \n");
+
+  while(alarmWentOff == FALSE) {
+
+    if(uaState != OTHER_RCV && uaState != STOP){
+      nr = read(fd, &ch, 1);
+      if(nr > 0)
+        printf("%4X",ch);
+    }                  
+
+    switch(uaState) {
+      case START:
+        if (ch == FLAG){
+          bcc = 0;
+          uaState = FLAG_RCV;
+        }
+        else
+          uaState = OTHER_RCV;
+        break;
+
+      case FLAG_RCV:
+        if (ch == A){
+          uaState = A_RCV;
+          bcc ^= ch;
+        }
+        else if (ch != FLAG)
+          uaState = OTHER_RCV;
+        break;
+
+      case A_RCV:
+        if (ch == C_UA){
+          uaState = C_RCV;
+          bcc ^= ch;
+        }
+        else if (ch != FLAG)
+          uaState = OTHER_RCV;
+        else
+          uaState = FLAG_RCV;
+        break;
+
+      case C_RCV:
+        if (ch == FLAG)
+          uaState = FLAG_RCV;
+        else if (ch == bcc)
+          uaState = BCC_OK;
+        else
+          uaState = OTHER_RCV;  
+        break;
+
+      case BCC_OK:
+        if(ch == FLAG) 
+          uaState = STOP;
+        break;
+
+      case OTHER_RCV:
+        uaState = START;
+        break;
+
+      case STOP:
+        printf("\nReceived UA message with success\n");
+        return TRUE;
+    }
+  }
+  
+  return FALSE;
 }
 
 
 int main(int argc, char** argv) {
 
-  signal(SIGALRM,alarmhandler);
+  signal(SIGALRM,alarmhandler); // Instala rotina que atende interrupcao do alarme
 
   int fd, c, res;
   struct termios oldtio,newtio;
@@ -110,57 +196,30 @@ int main(int argc, char** argv) {
   */
 
   newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 1;  /* sets the minimum number of characters to receive before satisfying the read. */
-
-
-  tcflush(fd, TCIOFLUSH);
+  newtio.c_cc[VMIN] = 0;  /* sets the minimum number of characters to receive before satisfying the read. */
 
   if (tcsetattr(fd,TCSANOW,&newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
-  
+
+
   printf("New termios structure set\n");
+
+  while(tries < MAX_RETR){ /* Enquanto nao se tiverem esgotado as tentativas */
+    
+    sendSet(fd); /* Transmite/Retransmite trama SET */
+
+    alarmWentOff = FALSE; /* A Flag passa a indicar que o tempo ainda nao se esgotou */
+    alarm(TIMEOUT); /* Ativacao do alarme para esperar por UA válida */
+
+    if (receiveUa(fd) == TRUE){ /* Ao receber a trama UA desativa o alarme e termina */
+      alarm(0);
+      break;
+    } 
+
+  }
   
-  /* TODO Implementar o mecanismo de retransmissão, do lado do Emissor, com time-out. */
-  
-  /* Enviar trama SET para a porta de serie */
-  sendSet(fd);
-
-  /* TODO - receiveUa(fd);*/
-
-  alarm(TIMEOUT);
-
-  int n;
-  int count=0;
-  unsigned char buf[255];
-
-  char trama[255];
-  bzero(trama, sizeof(trama));
-  int pos=0;
-
-  while(count<5){
-    n=read(fd,buf,1);
-    buf[n]=0;
-    trama[pos]=buf[0];
-    count+=1;
-  }
-
-  printf("UA:");
-  for (int i = 0; i < 5; i++){
-      printf("%4X ", trama[i]);
-  }
-  printf("received\n");
-
-  if(check_protection(trama)==1){
-    printf("BBC check error\n");
-    exit(-1);
-  }
-  else{
-    printf("BBC CORRECT\n");
-  }
-
-  sleep(2);
 
   if (tcsetattr(fd,TCSANOW,&oldtio) == -1) {
     perror("tcsetattr");
