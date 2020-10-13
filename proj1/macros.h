@@ -1,5 +1,5 @@
-#ifndef MACROS
-#define MACROS
+#ifndef MACROS_HEADER
+#define MACROS_HEADER
 
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1    /* POSIX compliant source */
@@ -10,6 +10,10 @@
 #define MAX_RETR          3   
 
 /* DATA LINK */
+
+typedef enum connectionRole {
+    RECEIVER, TRANSMITTER
+} connectionRole;
 
 #define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
 #define FLAG    0x7E         /* Flag que delimita as tramas */

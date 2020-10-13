@@ -3,6 +3,11 @@
 #include "datalink.h"
 #include "alarm.h"
 
+
+int llopen(int porta, connectionRole role){
+    return 0;
+}
+
 int receiveControl(int fd, control C) {
 
   state uaState = START;
@@ -70,4 +75,5 @@ int receiveControl(int fd, control C) {
   }
   
   return FALSE;
+
 }
