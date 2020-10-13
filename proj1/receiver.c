@@ -6,99 +6,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "types.h"
-#include "utils.h"
+#include <signal.h>
+#include "receiver.h"
+#include "datalink.h"
 
-
-#define BAUDRATE          B38400
-#define _POSIX_SOURCE     1    /* POSIX compliant source */
-
-#define A  0x03           /* Campo de Endereço em Comandos enviados pelo Emissor */
-#define C_UA  0x07        /* Unnumbered Acknowledgment control */
-#define C_SET   0x03      /* Set up control */
-#define FLAG  0x7E        /* Flag que delimita as tramas */
-
-
-/**
- *  Rececao da trama SET
- * 
- * @param fd descritor da porta de serie
-*/
-void receiveSet(int fd) {
-
-  state setState = START;
-  unsigned char ch, bcc = 0;
-  int nr;  
-
-  while(TRUE) {
-
-    if(setState != OTHER_RCV && setState != STOP){
-      nr = read(fd, &ch, 1);
-      if(nr > 0)
-        printf("Byte read: %x\n",ch);
-    }                  
-
-    switch(setState) {
-      case START:
-        if (ch == FLAG){
-          bcc = 0;
-          setState = FLAG_RCV;
-        }
-        else
-          setState = OTHER_RCV;
-        break;
-
-      case FLAG_RCV:
-        if (ch == A){
-          setState = A_RCV;
-          bcc ^= ch;
-        }
-        else if (ch != FLAG)
-          setState = OTHER_RCV;
-        break;
-
-      case A_RCV:
-        if (ch == C_SET){
-          setState = C_RCV;
-          bcc ^= ch;
-        }
-        else if (ch != FLAG)
-          setState = OTHER_RCV;
-        else
-          setState = FLAG_RCV;
-        break;
-
-      case C_RCV:
-        if (ch == FLAG)
-          setState = FLAG_RCV;
-        else if (ch == bcc)
-          setState = BCC_OK;
-        else
-          setState = OTHER_RCV;  
-        break;
-
-      case BCC_OK:
-        if(ch == FLAG) 
-          setState = STOP;
-        break;
-
-      case OTHER_RCV:
-        setState = START;
-        break;
-
-      case STOP:
-        printf("Received SET message with success\n");
-        return;
-    }
-  }
-}
-
-
-/**
- *  Envio da trama UA
- * 
- * @param fd descritor da porta de serie
-*/
 void sendUa(int fd) {
   unsigned char buf[5];
   int nw;
@@ -174,8 +85,8 @@ int main(int argc, char** argv) {
 
   printf("New termios structure set\n");
 
-  receiveSet(fd); /* Espera por trama SET*/
-  
+  receiveControl(fd, C_SET); /* Espera por trama SET*/
+
   sendUa(fd); /* Envia resposta UA para a porta de serie */
   
   
