@@ -1,14 +1,86 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <termios.h>
+#include <stdlib.h>
 #include "datalink.h"
+#include <signal.h>
 #include "alarm.h"
 #include "utils.h"
 
 
-int llopen(int porta, connectionRole role){
-    return 0;
+int llopen(int port, Status status){
+
+  int fd;
+  char* portName = (char*)malloc(sizeof(char)*sizeof("/dev/ttySx"));
+  struct termios oldtio;
+
+  sprintf(portName, "/dev/ttyS%d",port);
+
+  fd = openNonCanonical(portName,&oldtio);
+  if(fd == -1) 
+    return -1;
+
+  tries = 0;     
+  resend = FALSE; 
+
+  switch (status)
+  {
+  case RECEIVER:
+    openReceiver(fd);
+    break;
+  
+  case TRANSMITTER:
+    openTransmitter(fd);
+    break;
+    
+  default:
+    perror("Status");
+    restoreConfiguration(fd, &oldtio);
+    return -1;
+  }
+
+  restoreConfiguration(fd, &oldtio);
+  return 0;
 }
+
+
+int openReceiver(int fd) {
+
+  receiveControl(fd, C_SET); /* Espera por trama SET*/
+
+  resend = FALSE;
+  sendControl(fd, C_UA); /* Envia UA para a porta de serie */
+
+  return 0;
+};
+
+
+int openTransmitter(int fd) {
+
+  signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
+
+  tries = 0;     
+  resend = FALSE; 
+
+  /* (Re)transmissao da trama SET */
+  while(tries < MAX_RETR){
+    
+    sendControl(fd, C_SET);
+
+    resend = FALSE; 
+    alarm(TIMEOUT); /* Inicia espera por UA */
+
+    if (receiveControl(fd, C_UA) == TRUE){
+      resend = FALSE; 
+      alarm(0);
+      return 0;
+    } 
+
+  }
+
+  return -1;
+};
+
 
 int receiveControl(int fd, Control control) {
 
@@ -94,8 +166,10 @@ int sendControl(int fd, Control control) {
   tcflush(fd, TCIOFLUSH);
 
   nw = write(fd, buf, sizeof(buf));
-  if (nw != sizeof(buf))
-		perror("Error writing UA\n");
+  if (nw != sizeof(buf)){
+    fprintf(stderr,"Error writing %s\n", getControlName(control));
+    return -1;
+  }
 
   printf("Sent %s message with success\n", getControlName(control));
 

@@ -3,6 +3,8 @@
 
 #include "macros.h"
 
+int validateArgs(int argc, char** argv);
+
 /*
  * Abetura do descritor da porta de série em modo não canónico
  * @param port porta de serie

@@ -9,7 +9,11 @@
  * @param role TRANSMITTER / RECEIVER
  * @return identificador da ligacao de dados ou valor negativo em caso de erro
 */
-int llopen(int porta, connectionRole role);
+int llopen(int port, Status status);
+
+int openReceiver(int fd);
+
+int openTransmitter(int fd);
 
 /**
  *  Maquina de estados para receber uma trama de controlo 

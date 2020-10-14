@@ -1,6 +1,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "datalink.h"
 #include "utils.h"
   
@@ -8,23 +10,20 @@ extern unsigned int resend;
 
 int main(int argc, char** argv) {
 
-  /*
-  if ( (argc < 2) || ((strcmp("/dev/ttyS0", argv[1])!=0) && (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+  char * port = (char*)malloc(3*sizeof(char));
+
+  if(validateArgs(argc, argv) == -1) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    exit(1);
+    return -1;
   }
-  */
 
-  struct termios oldtio;
+  strcpy(port,&argv[1][9]);
 
-  int fd = openNonCanonical(argv[1],&oldtio);
-
-  receiveControl(fd, C_SET); /* Espera por trama SET*/
-
-  resend = FALSE;
-  sendControl(fd, C_UA); /* Envia resposta UA para a porta de serie */
+  if(llopen(atoi(port),RECEIVER)){
+    perror("llopen");
+    return -1;
+  }
   
-  restoreConfiguration(fd, &oldtio);
-  
+  free(port);
   return 0;
 }

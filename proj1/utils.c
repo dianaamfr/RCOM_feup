@@ -8,6 +8,18 @@
 #include <string.h>
 #include "utils.h"
 
+int validateArgs(int argc, char** argv) {
+ 
+    if((argc < 2) ||
+        ((strcmp("/dev/ttyS0", argv[1])!=0) &&
+        (strcmp("/dev/ttyS1", argv[1])!=0) &&
+        (strcmp("/dev/ttyS10", argv[1])!=0) &&
+        (strcmp("/dev/ttyS11", argv[1])!=0)))
+        return -1;
+    
+    return 0;
+}
+
 int openNonCanonical(char* port, struct termios* oldtio){
 
     int fd;
@@ -43,7 +55,7 @@ int openNonCanonical(char* port, struct termios* oldtio){
 
     tcflush(fd, TCIOFLUSH);
 
-    if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
+    if (tcsetattr(fd,TCSANOW,&newtio) == -1) {
         perror("tcsetattr");
         exit(-1);
     }

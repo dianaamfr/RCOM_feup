@@ -11,9 +11,9 @@
 
 /* DATA LINK */
 
-typedef enum connectionRole {
+typedef enum Status {
     RECEIVER, TRANSMITTER
-} connectionRole;
+} Status;
 
 #define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
 #define FLAG    0x7E         /* Flag que delimita as tramas */
