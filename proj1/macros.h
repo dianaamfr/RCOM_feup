@@ -19,14 +19,14 @@ typedef enum connectionRole {
 #define FLAG    0x7E         /* Flag que delimita as tramas */
 
 /* Estado da rececao da trama SET */
-typedef enum state {
+typedef enum State {
     START, FLAG_RCV, A_RCV, C_RCV, BCC_OK, STOP
-} state;
+} State;
 
 
-typedef enum control {
+typedef enum Control {
     C_UA = 0x07,
     C_SET = 0x03
-} control;
+} Control;
 
 #endif

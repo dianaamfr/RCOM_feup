@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <string.h>
 #include "utils.h"
-#include "macros.h"
 
 int openNonCanonical(char* port, struct termios* oldtio){
 
@@ -60,3 +59,23 @@ int restoreConfiguration(int fd, struct termios* oldtio){
     close(fd);
     return 0;
 }
+
+char* getControlName(Control control) {
+    char * str = "";
+
+    switch (control)
+    {
+    case C_SET:
+        str = "SET";
+        break;
+
+    case C_UA:
+        str ="UA";
+        break;
+    
+    default:
+        break;
+    }
+
+    return str;
+};

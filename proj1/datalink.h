@@ -16,6 +16,8 @@ int llopen(int porta, connectionRole role);
  * 
  * @param fd descritor da porta de serie
 */
-int receiveControl(int fd, control C);
+int receiveControl(int fd, Control C);
+
+int sendControl(int fd, Control C);
 
 #endif

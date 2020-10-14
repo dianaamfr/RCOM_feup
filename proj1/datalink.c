@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <termios.h>
 #include "datalink.h"
 #include "alarm.h"
+#include "utils.h"
 
 
 int llopen(int porta, connectionRole role){
     return 0;
 }
 
-int receiveControl(int fd, control C) {
+int receiveControl(int fd, Control control) {
 
-  state uaState = START;
+  State uaState = START;
   unsigned char ch, bcc = 0;
   int nr;  
 
@@ -44,7 +46,7 @@ int receiveControl(int fd, control C) {
         break;
 
       case A_RCV:
-        if (ch == C){
+        if (ch == control){
           uaState = C_RCV;
           bcc ^= ch;
         }
@@ -69,11 +71,34 @@ int receiveControl(int fd, control C) {
         break;
 
       case STOP:
-        printf("\nReceived UA message with success\n");
+        printf("\nReceived %s message with success\n", getControlName(control));
         return TRUE;
     }
   }
   
   return FALSE;
+
+}
+
+
+int sendControl(int fd, Control control) {
+  unsigned char buf[5];
+  int nw;
+  
+  buf[0] = FLAG;
+  buf[1] = A;
+  buf[2] = control;
+  buf[3] = buf[1] ^ buf[2];
+  buf[4] = FLAG;
+
+  tcflush(fd, TCIOFLUSH);
+
+  nw = write(fd, buf, sizeof(buf));
+  if (nw != sizeof(buf))
+		perror("Error writing UA\n");
+
+  printf("Sent %s message with success\n", getControlName(control));
+
+  return 0;
 
 }

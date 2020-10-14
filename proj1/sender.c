@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include "sender.h"
 #include "datalink.h"
 #include "alarm.h"
 #include "utils.h"
@@ -15,28 +14,6 @@
  extern unsigned int tries;     
  extern unsigned int resend; 
 
-void sendSet(int fd) {
-  unsigned char SET[5]; /* trama SET */
-  int nw;
-  
-  SET[0] = FLAG;
-  SET[1] = A;
-  SET[2] = C_SET;
-  SET[3] = SET[1] ^ SET[2];
-  SET[4] = FLAG;
-
-  tcflush(fd, TCIOFLUSH);
-
-  nw = write(fd, SET, sizeof(SET));
-  if (nw != sizeof(SET))
-		perror("Error writing SET\n");
- 
-  for (int i = 0; i < sizeof(SET); i++){  
-      printf("%4X ", SET[i]);
-  }
-  printf("\n");
-  
-}
 
 int main(int argc, char** argv) {
 
@@ -58,7 +35,7 @@ int main(int argc, char** argv) {
 
   while(tries < MAX_RETR){ /* Enquanto nao se tiverem esgotado as tentativas */
     
-    sendSet(fd); /* Transmite/Retransmite trama SET */
+    sendControl(fd, C_SET); /* Transmite/Retransmite trama SET */
 
     resend = FALSE; /* A Flag passa a indicar que o tempo ainda nao se esgotou */
     alarm(TIMEOUT); /* Ativacao do alarme para esperar por UA válida */
