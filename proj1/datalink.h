@@ -3,6 +3,17 @@
 
 #include "macros.h"
 
+typedef struct linkLayer {
+    char port[20];                  /*Dispositivo /dev/ttySx, x = 0, 1*/
+    int baudRate;                   /*Velocidade de transmissão*/
+    unsigned int sequenceNumber;    /*Número de sequência da trama: 0, 1*/
+    unsigned int timeout;           /*Valor do temporizador: 1 s*/
+    unsigned int numTransmissions;  /*Número de tentativas em caso de falha*/
+    unsigned char frame[MAX_INFO_FRAME];     /*Trama*/
+} linkLayer;
+
+linkLayer dataLink;
+
 /**
  * Estabelecimento da ligação entre transmissor e recetor
  * @param port identifica a porta de serie
@@ -20,8 +31,12 @@ int openTransmitter(int fd);
  * 
  * @param fd descritor da porta de serie
 */
-int receiveControl(int fd, Control C);
+int receiveSupervisionFrame(int fd, Control C);
 
-int sendControl(int fd, Control C);
+int sendSupervisionFrame(int fd, Control C);
+
+int receiveInfoFrame(int fd, Control control);
+
+int validBcc2(unsigned char * dataField, int length);
 
 #endif

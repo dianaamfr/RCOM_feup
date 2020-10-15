@@ -46,10 +46,10 @@ int llopen(int port, Status status){
 
 int openReceiver(int fd) {
 
-  receiveControl(fd, C_SET); /* Espera por trama SET*/
+  receiveSupervisionFrame(fd, C_SET); /* Espera por trama SET*/
 
   resend = FALSE;
-  sendControl(fd, C_UA); /* Envia UA para a porta de serie */
+  sendSupervisionFrame(fd, C_UA); /* Envia UA para a porta de serie */
 
   return 0;
 };
@@ -65,12 +65,12 @@ int openTransmitter(int fd) {
   /* (Re)transmissao da trama SET */
   while(tries < MAX_RETR){
     
-    sendControl(fd, C_SET);
+    sendSupervisionFrame(fd, C_SET);
 
     resend = FALSE; 
     alarm(TIMEOUT); /* Inicia espera por UA */
 
-    if (receiveControl(fd, C_UA) == TRUE){
+    if (receiveSupervisionFrame(fd, C_UA) == TRUE){
       resend = FALSE; 
       alarm(0);
       return 0;
@@ -82,7 +82,7 @@ int openTransmitter(int fd) {
 };
 
 
-int receiveControl(int fd, Control control) {
+int receiveSupervisionFrame(int fd, Control control) {
 
   State uaState = START;
   unsigned char ch, bcc = 0;
@@ -153,7 +153,7 @@ int receiveControl(int fd, Control control) {
 }
 
 
-int sendControl(int fd, Control control) {
+int sendSupervisionFrame(int fd, Control control) {
   unsigned char buf[5];
   int nw;
   
@@ -175,4 +175,92 @@ int sendControl(int fd, Control control) {
 
   return 0;
 
+}
+
+
+int receiveInfoFrame(int fd, Control control) {
+  // TODO - em desenvolvimento
+  State iState = START;
+  unsigned char ch, bcc1 = 0;
+  int nr, i = 0;  
+
+  printf("Bytes read: \n");
+
+  while(TRUE) {
+
+    if(iState != STOP){
+      nr = read(fd, &ch, 1);
+      if(nr > 0)
+        printf("%4X",ch);
+    }                  
+
+    switch(iState) {
+      case START:
+        if (ch == FLAG){
+          bcc1 = 0;
+          i = 0;
+          iState = FLAG_RCV;
+        }
+        else
+          iState = START;
+        break;
+
+      case FLAG_RCV:
+        if (ch == A){
+          iState = A_RCV;
+          bcc1 ^= ch;
+        }
+        else if (ch != FLAG)
+          iState = START;
+        break;
+
+      case A_RCV:
+        if (ch == control){
+          iState = C_RCV;
+          bcc1 ^= ch;
+        }
+        else if (ch != FLAG)
+          iState = START;
+        else
+          iState = FLAG_RCV;
+        break;
+
+      case C_RCV:
+        if (ch == FLAG)
+          iState = FLAG_RCV;
+        else if (ch == bcc1)
+          iState = BCC_OK;
+        else
+          iState = START;  
+        break;
+
+      case BCC_OK:
+        if(ch == FLAG && validBcc2(dataLink.frame,i+1)) {
+          iState = STOP;
+        }
+        else{
+          dataLink.frame[i] = ch;
+          i++;
+        }
+        break;
+
+      case STOP:
+        printf("\nReceived %s message with success\n", getControlName(control));
+        return TRUE;
+    }
+  }
+  
+  return FALSE;
+
+}
+
+int validBcc2(unsigned char * dataField, int length){
+  unsigned char bcc_received = dataField[length-1];
+  unsigned char bcc_calculated = 0;
+
+  for(int i = 0; i < length - 1; i++){
+    bcc_calculated ^= dataField[i];
+  }
+
+  return bcc_calculated == bcc_received;
 }
