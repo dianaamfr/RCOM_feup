@@ -3,14 +3,18 @@
 
 #define BAUDRATE          B38400
 #define _POSIX_SOURCE     1    /* POSIX compliant source */
+
 #define FALSE   0
 #define TRUE    1
 
 #define TIMEOUT           3   
 #define MAX_RETR          3   
 
+#define HEADER_SIZE       4
 #define MAX_DATA_FIELD    1024
 #define MAX_INFO_FRAME    MAX_DATA_FIELD + 6
+
+#define CONTROL_BYTE      2
 
 /* DATA LINK */
 
@@ -32,6 +36,8 @@ typedef enum Control {
     C_SET = 0x03,
     C_RR_0 = 0x05,
     C_RR_1 = 0x85,
+    C_REJ_0 = 0x01,
+    C_REJ_1 = 0x81,
     I_0 = 0x00,
     I_1 = 0x40
 } Control;

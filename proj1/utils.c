@@ -20,6 +20,7 @@ int validateArgs(int argc, char** argv) {
     return 0;
 }
 
+
 int openNonCanonical(char* port, struct termios* oldtio){
 
     int fd;
@@ -66,11 +67,12 @@ int openNonCanonical(char* port, struct termios* oldtio){
 
 }
 
+
 int restoreConfiguration(int fd, struct termios* oldtio){
     tcsetattr(fd,TCSANOW, oldtio);
-    close(fd);
-    return 0;
+    return close(fd);
 }
+
 
 char* getControlName(Control control) {
     char * str = "";
@@ -83,6 +85,30 @@ char* getControlName(Control control) {
 
     case C_UA:
         str ="UA";
+        break;
+
+    case C_RR_0:
+        str ="RR_0";
+        break;
+
+    case C_RR_1:
+        str ="RR_1";
+        break;
+
+    case C_REJ_0:
+        str ="REJ_0";
+        break;
+
+    case C_REJ_1:
+        str ="REJ_1";
+        break;
+    
+    case I_0:
+        str ="I_0";
+        break;
+
+    case I_1:
+        str ="I_1";
         break;
     
     default:

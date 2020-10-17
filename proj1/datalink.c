@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "datalink.h"
 #include <signal.h>
+#include <string.h>
 #include "alarm.h"
 #include "utils.h"
 
@@ -11,45 +12,79 @@
 int llopen(int port, Status status){
 
   int fd;
-  char* portName = (char*)malloc(sizeof(char)*sizeof("/dev/ttySx"));
   struct termios oldtio;
 
-  sprintf(portName, "/dev/ttyS%d",port);
+  initDataLink(port);
 
-  fd = openNonCanonical(portName,&oldtio);
-  if(fd == -1) 
+  fd = openNonCanonical(dataLink->port,&oldtio);
+  if(fd == -1){
+    restoreConfiguration(fd, &oldtio);
     return -1;
+  }
 
   tries = 0;     
   resend = FALSE; 
 
   switch (status)
   {
-  case RECEIVER:
-    openReceiver(fd);
-    break;
-  
-  case TRANSMITTER:
-    openTransmitter(fd);
-    break;
+    case RECEIVER:
+      if(openReceiver(fd) == -1){
+        restoreConfiguration(fd, &oldtio);
+        return -1;
+      }
+      break;
     
-  default:
-    perror("Status");
-    restoreConfiguration(fd, &oldtio);
+    case TRANSMITTER:
+      if(openTransmitter(fd) == -1){
+        restoreConfiguration(fd, &oldtio);
+        return -1;
+      }
+      break;
+      
+    default:
+      perror("Invalid Status: nor RECEIVER nor TRANSMITTER");
+      restoreConfiguration(fd, &oldtio);
+      return -1;
+  }
+
+  return fd;
+}
+
+
+int initDataLink(int port) {
+
+	dataLink = (linkLayer*) malloc(sizeof(linkLayer));
+  if(dataLink == NULL){
+    perror("Malloc Link Layer struct");
     return -1;
   }
 
-  restoreConfiguration(fd, &oldtio);
+	if( sprintf(dataLink->port, "/dev/ttyS%d", port) < 0 ){
+    perror("Sprintf: copying port name error");
+    return -1;
+  }
+
+	dataLink->baudRate = BAUDRATE;
+	dataLink->sequenceNumber = 0; // Começar com número de sequência 0
+  dataLink->timeout = TIMEOUT;
+  dataLink->numTransmissions = MAX_RETR;
+
   return 0;
 }
 
 
 int openReceiver(int fd) {
 
-  receiveSupervisionFrame(fd, C_SET); /* Espera por trama SET*/
+  if(receiveSupervisionFrame(fd, C_SET) == -1) { /* Espera por trama SET*/
+    perror("Error receiving SET frame");
+    return -1;
+  }
 
   resend = FALSE;
-  sendSupervisionFrame(fd, C_UA); /* Envia UA para a porta de serie */
+  if(sendSupervisionFrame(fd, C_UA) == -1) { /* Envia UA para a porta de serie */
+    perror("Error sending UA frame");
+    return -1;
+  }
 
   return 0;
 };
@@ -104,8 +139,6 @@ int receiveSupervisionFrame(int fd, Control control) {
           bcc = 0;
           uaState = FLAG_RCV;
         }
-        else
-          uaState = START;
         break;
 
       case FLAG_RCV:
@@ -144,11 +177,11 @@ int receiveSupervisionFrame(int fd, Control control) {
 
       case STOP:
         printf("\nReceived %s message with success\n", getControlName(control));
-        return TRUE;
+        return 0;
     }
   }
   
-  return FALSE;
+  return -1;
 
 }
 
@@ -178,15 +211,33 @@ int sendSupervisionFrame(int fd, Control control) {
 }
 
 
-int receiveInfoFrame(int fd, Control control) {
-  // TODO - em desenvolvimento
+int llread(int fd, unsigned char* buffer){
+
+  int validDataField = receiveInfoFrame(fd); // Recebe trama de informação
+  int expectedSequenceNumber = isExpectedSequenceNumber();
+
+  Control ack = buildAck(validDataField, expectedSequenceNumber);
+
+  if(sendSupervisionFrame(fd, ack) != -1 ){
+    fprintf(stderr,"Error sending %s\n", getControlName(ack));
+    return -1;
+  }
+
+  return 0;
+
+}
+
+
+int receiveInfoFrame(int fd) {
+ 
   State iState = START;
   unsigned char ch, bcc1 = 0;
-  int nr, i = 0;  
+  int nr, i = 0; 
+  int end = FALSE; 
 
   printf("Bytes read: \n");
 
-  while(TRUE) {
+  while(!end) {
 
     if(iState != STOP){
       nr = read(fd, &ch, 1);
@@ -199,68 +250,130 @@ int receiveInfoFrame(int fd, Control control) {
         if (ch == FLAG){
           bcc1 = 0;
           i = 0;
+          memset(dataLink->frame, 0, sizeof(dataLink->frame)); 
+
           iState = FLAG_RCV;
+          dataLink->frame[i] = ch;
+          i++;
         }
-        else
-          iState = START;
         break;
 
       case FLAG_RCV:
         if (ch == A){
-          iState = A_RCV;
           bcc1 ^= ch;
+
+          iState = A_RCV;
+          dataLink->frame[i] = ch;
+          i++;
         }
         else if (ch != FLAG)
           iState = START;
         break;
 
       case A_RCV:
-        if (ch == control){
-          iState = C_RCV;
+        if (isInfoSequenceNumber(ch) == TRUE){
           bcc1 ^= ch;
+
+          iState = C_RCV;
+          dataLink->frame[i] = ch;
+          i++;
         }
-        else if (ch != FLAG)
+        else if(ch != FLAG){
           iState = START;
-        else
+        }  
+        else{
           iState = FLAG_RCV;
+          i = 1;
+        }
         break;
 
       case C_RCV:
-        if (ch == FLAG)
+        if (ch == FLAG){
           iState = FLAG_RCV;
-        else if (ch == bcc1)
+          i = 1;
+        }
+        else if (ch == bcc1){
           iState = BCC_OK;
+          dataLink->frame[i] = ch;
+          i++;
+        }
         else
           iState = START;  
         break;
 
       case BCC_OK:
-        if(ch == FLAG && validBcc2(dataLink.frame,i+1)) {
+        dataLink->frame[i] = ch;
+        i++;
+        if(ch == FLAG)
           iState = STOP;
-        }
-        else{
-          dataLink.frame[i] = ch;
-          i++;
-        }
         break;
 
       case STOP:
-        printf("\nReceived %s message with success\n", getControlName(control));
-        return TRUE;
+        printf("\nReceived Information Frame with success\n");
+        end = TRUE;
+    
     }
   }
   
-  return FALSE;
+  int dataSize = i - HEADER_SIZE - 1;
+  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize) != -1)
+    return TRUE;
+
+  return FALSE; // Erro no BCC2
 
 }
 
-int validBcc2(unsigned char * dataField, int length){
-  unsigned char bcc_received = dataField[length-1];
+
+int validBcc2(unsigned char * dataField, int length) {
+  unsigned char bcc_received = dataField[length - 1];
   unsigned char bcc_calculated = 0;
 
-  for(int i = 0; i < length - 1; i++){
+  for(int i = 0; i < length - 1; i++){ // XOR dos bytes de dados
     bcc_calculated ^= dataField[i];
   }
 
-  return bcc_calculated == bcc_received;
+  if(bcc_calculated == bcc_received)
+    return 0;
+  
+  return -1;
+}
+
+
+int isInfoSequenceNumber(unsigned char byte){
+  if(byte == I_0 || byte == I_1)
+    return TRUE;
+  return FALSE; 
+}
+
+
+int isExpectedSequenceNumber(){
+  int receivedSequenceNumber = (dataLink->frame[CONTROL_BYTE] >> 7) & 0x01;
+
+  if(receivedSequenceNumber == dataLink->sequenceNumber)
+    return TRUE;
+  return FALSE;
+}
+
+
+Control buildAck(int validDataField, int expectedSequenceNumber){
+
+  if(validDataField == TRUE){ // Tramas sem erros nos dados
+
+    if(expectedSequenceNumber == TRUE) // Nova Trama
+      dataLink->sequenceNumber = !dataLink->sequenceNumber; // Passa a pedir o outro Numero de Sequencia
+      
+    if(dataLink->sequenceNumber == 0)
+      return C_RR_0;
+    return C_RR_1;
+  }
+
+  // Tramas com erros nos dados
+  if(expectedSequenceNumber == TRUE){ // Nova Trama - pedido de retransmissao
+    if(dataLink->sequenceNumber == 0)
+      return C_REJ_0;
+    return C_REJ_1;
+  }
+
+  return C_RR_0;  // Trama repetida com erros nos dados
+
 }

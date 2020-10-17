@@ -14,20 +14,20 @@
 
 int main(int argc, char** argv) {
 
-  char * port = (char*)malloc(3*sizeof(char));
+  int port, fd;
 
+  // Pode ser lido apenas o número da porta?
   if(validateArgs(argc, argv) == -1) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
     return -1;
   }
 
-  strcpy(port,&argv[1][9]);
-
-  if(llopen(atoi(port),TRANSMITTER)){
-    perror("llopen");
+  port = atoi(&argv[1][9]);
+  // A partir daqui será feito na app provavelmente
+  if((fd = llopen(port, TRANSMITTER)) < 0){
+    perror("llopen Transmitter");
     return -1;
   }
   
-  free(port); 
   return 0;
 }
