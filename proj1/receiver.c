@@ -1,49 +1,41 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
-#include "receiver.h"
+#include <string.h>
+#include <stdlib.h>
 #include "datalink.h"
 #include "utils.h"
-
-void sendUa(int fd) {
-  unsigned char buf[5];
-  int nw;
   
-  buf[0] = FLAG;
-  buf[1] = A;
-  buf[2] = C_UA;
-  buf[3] = buf[1] ^ buf[2];
-  buf[4] = FLAG;
-
-  tcflush(fd, TCIOFLUSH);
-
-  nw = write(fd, buf, sizeof(buf));
-  if (nw != sizeof(buf))
-		perror("Error writing UA\n");
-
-  printf("Sent UA message with success\n");
-
-}
-
+extern unsigned int resend;
 
 int main(int argc, char** argv) {
 
-  /*
-  if ( (argc < 2) || ((strcmp("/dev/ttyS0", argv[1])!=0) && (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+  int port, fd;
+
+  // Pode ser lido apenas o número da porta?
+  if(validateArgs(argc, argv) == -1) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    exit(1);
+    return -1;
   }
-  */
-
-  struct termios oldtio;
-
-  int fd = openNonCanonical(argv[1],&oldtio);
-
-  receiveControl(fd, C_SET); /* Espera por trama SET*/
-
-  sendUa(fd); /* Envia resposta UA para a porta de serie */
   
-  restoreConfiguration(fd, &oldtio);
-  
+  port = atoi(&argv[1][9]);
+
+  // A partir daqui será feito na app provavelmente
+  if((fd = llopen(port, RECEIVER)) < 0){
+    perror("llopen Receiver");
+    return -1;
+  }
+
+  /* Usado para testar a receção da trama de info pelo recetor e envio de RR*/
+  unsigned char buf[20];
+  int nr = llread(fd, buf);
+
+  printf("Bytes read from port: \n");
+  for(int i = 0; i < nr; i++){
+    printf("%4X",buf[i]);
+  }
+
+  printf("\n");
+
   return 0;
 }

@@ -6,71 +6,59 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <signal.h>
-#include "sender.h"
 #include "datalink.h"
-#include "alarm.h"
 #include "utils.h"
 
- extern unsigned int tries;     
- extern unsigned int resend; 
-
-void sendSet(int fd) {
-  unsigned char SET[5]; /* trama SET */
-  int nw;
-  
-  SET[0] = FLAG;
-  SET[1] = A;
-  SET[2] = C_SET;
-  SET[3] = SET[1] ^ SET[2];
-  SET[4] = FLAG;
-
-  tcflush(fd, TCIOFLUSH);
-
-  nw = write(fd, SET, sizeof(SET));
-  if (nw != sizeof(SET))
-		perror("Error writing SET\n");
- 
-  for (int i = 0; i < sizeof(SET); i++){  
-      printf("%4X ", SET[i]);
-  }
-  printf("\n");
-  
-}
 
 int main(int argc, char** argv) {
 
-  signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
-    
-  /*if ( (argc < 2) || 
-        ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-        (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+  int port, fd;
+
+  // Pode ser lido apenas o número da porta?
+  if(validateArgs(argc, argv) == -1) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    exit(1);
-  }*/
-
-  struct termios oldtio;
-
-  int fd = openNonCanonical(argv[1],&oldtio);
-
-  tries = 0;     
-  resend = FALSE; 
-
-  while(tries < MAX_RETR){ /* Enquanto nao se tiverem esgotado as tentativas */
-    
-    sendSet(fd); /* Transmite/Retransmite trama SET */
-
-    resend = FALSE; /* A Flag passa a indicar que o tempo ainda nao se esgotou */
-    alarm(TIMEOUT); /* Ativacao do alarme para esperar por UA válida */
-
-    if (receiveControl(fd, C_UA) == TRUE){ /* Ao receber a trama UA desativa o alarme e termina */
-      alarm(0);
-      break;
-    } 
-
+    return -1;
   }
+
+  port = atoi(&argv[1][9]);
   
-  restoreConfiguration(fd, &oldtio);
+  // A partir daqui será feito na app provavelmente
+  if((fd = llopen(port, TRANSMITTER)) < 0){
+    perror("llopen Transmitter");
+    return -1;
+  }
+
+  /* Usado para testar a receção da trama de info pelo recetor e receção de RR pelo emissor*/
+  printf("Send Info Frame\n");
+
+  /*unsigned char buf[8];
+  buf[0] = FLAG;
+  buf[1] = A;
+  buf[2] = I_0;
+  buf[3] = buf[1] ^ buf[2];
+  buf[4] = 0x17;
+  buf[5] = 0x14;
+  buf[6] = buf[4] ^ buf[5];
+  buf[7] = FLAG;
+  write(fd, buf, sizeof(buf));*/
+
+  unsigned char buffer[20];
+  buffer[0] = 0x17;
+  buffer[1] = 0x34;
+  buffer[2] = 0x36;
+  buffer[3] = 0x93;
+  buffer[4] = 0x54;
+  buffer[5] = 0x77;
+
+
+  if(llwrite(fd, buffer, 6) < 0) {
+    printf("deu erro");
+    return -1;
+  }
+
+
+  // Aqui vai ter que conseguir ler se receber RR ou REJ
+  //receiveSupervisionFrame(fd, C_RR_1);
   
   return 0;
 }
