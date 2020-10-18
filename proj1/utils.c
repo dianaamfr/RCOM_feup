@@ -7,7 +7,19 @@
 #include <unistd.h>
 #include <string.h>
 #include "utils.h"
-#include "macros.h"
+
+int validateArgs(int argc, char** argv) {
+ 
+    if((argc < 2) ||
+        ((strcmp("/dev/ttyS0", argv[1])!=0) &&
+        (strcmp("/dev/ttyS1", argv[1])!=0) &&
+        (strcmp("/dev/ttyS10", argv[1])!=0) &&
+        (strcmp("/dev/ttyS11", argv[1])!=0)))
+        return -1;
+    
+    return 0;
+}
+
 
 int openNonCanonical(char* port, struct termios* oldtio){
 
@@ -44,7 +56,7 @@ int openNonCanonical(char* port, struct termios* oldtio){
 
     tcflush(fd, TCIOFLUSH);
 
-    if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
+    if (tcsetattr(fd,TCSANOW,&newtio) == -1) {
         perror("tcsetattr");
         exit(-1);
     }
@@ -55,8 +67,53 @@ int openNonCanonical(char* port, struct termios* oldtio){
 
 }
 
+
 int restoreConfiguration(int fd, struct termios* oldtio){
     tcsetattr(fd,TCSANOW, oldtio);
-    close(fd);
-    return 0;
+    return close(fd);
 }
+
+
+char* getControlName(Control control) {
+    char * str = "";
+
+    switch (control)
+    {
+    case C_SET:
+        str = "SET";
+        break;
+
+    case C_UA:
+        str ="UA";
+        break;
+
+    case C_RR_0:
+        str ="RR_0";
+        break;
+
+    case C_RR_1:
+        str ="RR_1";
+        break;
+
+    case C_REJ_0:
+        str ="REJ_0";
+        break;
+
+    case C_REJ_1:
+        str ="REJ_1";
+        break;
+    
+    case I_0:
+        str ="I_0";
+        break;
+
+    case I_1:
+        str ="I_1";
+        break;
+    
+    default:
+        break;
+    }
+
+    return str;
+};
