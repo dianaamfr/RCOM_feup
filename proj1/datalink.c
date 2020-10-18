@@ -387,3 +387,5 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
   return C_RR_0;  // Trama repetida com erros nos dados
 
 }
+
+int byteStuffing();

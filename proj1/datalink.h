@@ -111,4 +111,10 @@ int isExpectedSequenceNumber();
 */
 Control buildAck(int validDataField, int expectedSequenceNumber);
 
+
+/**
+ * Aplica o mecanismo de byte stuffing para evitar o falso reconhecimento de uma flag ou caratér de escape no interior de uma trama, garantindo transparência
+*/
+int byteStuffing();
+
 #endif
