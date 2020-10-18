@@ -105,7 +105,7 @@ int openTransmitter(int fd) {
     resend = FALSE; 
     alarm(TIMEOUT); /* Inicia espera por UA */
 
-    if (receiveSupervisionFrame(fd, C_UA) == TRUE){
+    if (receiveSupervisionFrame(fd, C_UA) == 0){
       resend = FALSE; 
       alarm(0);
       return 0;
@@ -213,17 +213,26 @@ int sendSupervisionFrame(int fd, Control control) {
 
 int llread(int fd, unsigned char* buffer){
 
-  int validDataField = receiveInfoFrame(fd); // Recebe trama de informação
+  int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
+  int validDataField = TRUE;
+  
+  if(dataFieldSize == -1) 
+    validDataField = FALSE;
+
   int expectedSequenceNumber = isExpectedSequenceNumber();
 
+  
   Control ack = buildAck(validDataField, expectedSequenceNumber);
 
-  if(sendSupervisionFrame(fd, ack) != -1 ){
+  if(sendSupervisionFrame(fd, ack) == -1 ){
     fprintf(stderr,"Error sending %s\n", getControlName(ack));
     return -1;
   }
 
-  return 0;
+  if(validDataField == TRUE)
+    memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);
+
+  return dataFieldSize;
 
 }
 
@@ -304,8 +313,9 @@ int receiveInfoFrame(int fd) {
       case BCC_OK:
         dataLink->frame[i] = ch;
         i++;
-        if(ch == FLAG)
+        if(ch == FLAG){
           iState = STOP;
+        }
         break;
 
       case STOP:
@@ -315,11 +325,11 @@ int receiveInfoFrame(int fd) {
     }
   }
   
-  int dataSize = i - HEADER_SIZE - 1;
-  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize) != -1)
-    return TRUE;
+  int dataSize = i - DELIMIT_INFO_SIZE;
+  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
+    return dataSize;
 
-  return FALSE; // Erro no BCC2
+  return -1; // Erro no BCC2
 
 }
 

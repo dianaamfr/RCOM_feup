@@ -10,9 +10,10 @@
 #define TIMEOUT           3   
 #define MAX_RETR          3   
 
-#define HEADER_SIZE       4
-#define MAX_DATA_FIELD    1024
-#define MAX_INFO_FRAME    MAX_DATA_FIELD + 6
+#define HEADER_SIZE        4
+#define DELIMIT_INFO_SIZE  6
+#define MAX_DATA_FIELD     1024
+#define MAX_INFO_FRAME     MAX_DATA_FIELD + DELIMIT_INFO_SIZE
 
 #define CONTROL_BYTE      2
 

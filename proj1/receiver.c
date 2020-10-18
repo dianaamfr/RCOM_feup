@@ -19,11 +19,23 @@ int main(int argc, char** argv) {
   }
   
   port = atoi(&argv[1][9]);
+
   // A partir daqui será feito na app provavelmente
   if((fd = llopen(port, RECEIVER)) < 0){
     perror("llopen Receiver");
     return -1;
   }
-  
+
+  /* Usado para testar a receção da trama de info pelo recetor e envio de RR*/
+  unsigned char buf[20];
+  int nr = llread(fd, buf);
+
+  printf("Bytes read from port: \n");
+  for(int i = 0; i < nr; i++){
+    printf("%4X",buf[i]);
+  }
+
+  printf("\n");
+
   return 0;
 }

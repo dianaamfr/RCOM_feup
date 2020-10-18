@@ -51,7 +51,7 @@ int initDataLink(int port);
  * Leitura da informação da porta de série
  * @param fd descritor da porta de série
  * @param buffer para armazenar os dados lidos da porta de série
- * @return 0 em caso de sucesso e -1 em caso de falha
+ * @return comprimento do array(número de carateres lidos) ou -1 em caso de falha
 */
 int llread(int fd, unsigned char* buffer);
 
@@ -77,7 +77,7 @@ int sendSupervisionFrame(int fd, Control control);
 /**
  * Receção da trama de informação(I)
  * @param fd descritor da porta de série
- * @return 0 (TRUE) se não há erros no cabeçalho (BCC1) nem no campo de dados(BCC2) e 1 (FALSE) no caso de erros no campo de dados(BCC2)
+ * @return número de bytes de dados se não há erros no cabeçalho (BCC1) nem no campo de dados(BCC2) e -1 no caso de erros no campo de dados(BCC2)
 */
 int receiveInfoFrame(int fd);
 
