@@ -35,11 +35,7 @@ typedef enum State {
 } State;
 
 
-
 typedef enum Control {
-    C_START = 0x02,
-    C_END = 0x03,
-    C_DATA = 0x01,
     C_UA = 0x07,
     C_SET = 0x03,
     C_RR_0 = 0x05,

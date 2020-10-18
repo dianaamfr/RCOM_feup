@@ -220,7 +220,7 @@ int llread(int fd, unsigned char* buffer){
   if(dataFieldSize == -1) 
     validDataField = FALSE;
 
- /* int expectedSequenceNumber = isExpectedSequenceNumber();
+  int expectedSequenceNumber = isExpectedSequenceNumber();
 
   
   Control ack = buildAck(validDataField, expectedSequenceNumber);
@@ -231,7 +231,7 @@ int llread(int fd, unsigned char* buffer){
   }
 
   if(validDataField == TRUE)
-    memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);*/
+    memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);
 
   return dataFieldSize;
 
@@ -247,7 +247,7 @@ int receiveInfoFrame(int fd) {
 
   printf("Bytes read: \n");
 
-  while(!end) {
+  while(!end && i< MAX_INFO_FRAME) {
 
     if(iState != STOP){
       nr = read(fd, &ch, 1);
@@ -389,9 +389,6 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 
 }
 
-
-
-
 unsigned char createBCC(unsigned char a, unsigned char c) {
     return a ^ c;
 }
@@ -401,39 +398,39 @@ unsigned char createBCC_2(unsigned char* frame, int length) {
   unsigned char bcc2 = frame[0];
 
   for(int i = 1; i < length; i++){
-    bcc2 = bcc2 ^ frame[i];
+    bcc2 ^= frame[i];
   }
 
   return bcc2;
 }
 
-int createFrameI(unsigned char* frame, unsigned char controlField, unsigned char* infoField, int infoFieldLength) {
+int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLength) {
 
-  frame[0] = FLAG;
+  dataLink->frame[0] = FLAG;
 
-  frame[1] = 0x03; 
+  dataLink->frame[1] = A; 
 
-  frame[2] = controlField;
+  dataLink->frame[2] = controlField;
 
-  frame[3] = createBCC(frame[1], frame[2]);
+  dataLink->frame[3] = createBCC(dataLink->frame[1], dataLink->frame[2]);
 
   for(int i = 0; i < infoFieldLength; i++) {
-    frame[i + 4] = infoField[i];
+    dataLink->frame[i + 4] = infoField[i];
   }
 
   unsigned bcc2 = createBCC_2(infoField, infoFieldLength);
 
-  frame[infoFieldLength + 4] = bcc2;
+  dataLink->frame[infoFieldLength + 4] = bcc2;
 
-  frame[infoFieldLength + 5] = FLAG;
+  dataLink->frame[infoFieldLength + 5] = FLAG;
 
   return 0;
 }
 
-int sendFrameI(unsigned char* frame, int fd, int length) {
+int sendFrameI(int fd, int length) {
 
     int n;
-    if( (n = write(fd, frame, length)) <= 0){
+    if( (n = write(fd, dataLink->frame, length + DELIMIT_INFO_SIZE)) <= 0){
         return -1;
     }
     return n;
@@ -443,9 +440,9 @@ int sendFrameI(unsigned char* frame, int fd, int length) {
 
 
 
-int llwrite(int fd, char* buffer, int length) {
+int llwrite(int fd, unsigned char* buffer, int length) {
 
-  unsigned char controlByte;
+  Control controlByte;
   unsigned char answer_buffer[MAX_DATA_FIELD];
 
   if(&dataLink->sequenceNumber == 0)
@@ -453,13 +450,11 @@ int llwrite(int fd, char* buffer, int length) {
   else controlByte = C_N1;
 
 
-  if (createFrameI(dataLink->frame, controlByte,(unsigned char*) buffer, length) != 0) {
+  if (createFrameI(controlByte, buffer, length) != 0) {
     free(&dataLink->frame);
     //close
     return -1;
   }
-
-  printf("AAAAAAAAAAA");
 
 
 /*
@@ -529,7 +524,7 @@ int llwrite(int fd, char* buffer, int length) {
   */
 
   int numWritten;
-  if((numWritten = sendFrameI(dataLink->frame, fd, length)) == -1) {
+  if((numWritten = sendFrameI(fd, length)) == -1) {
       free(&dataLink->frame);
       //closeNonCanonical(fd, &oldtio);
       return -1;

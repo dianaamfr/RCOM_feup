@@ -42,13 +42,13 @@ int main(int argc, char** argv) {
   buf[7] = FLAG;
   write(fd, buf, sizeof(buf));*/
 
-  char buffer[20];
-  buffer[0] = 'o';
-  buffer[1] = 'l';
-  buffer[2] = 'a';
-  buffer[3] = '!';
-  buffer[4] = ':';
-  buffer[5] = ')';
+  unsigned char buffer[20];
+  buffer[0] = 0x17;
+  buffer[1] = 0x34;
+  buffer[2] = 0x36;
+  buffer[3] = 0x93;
+  buffer[4] = 0x54;
+  buffer[5] = 0x77;
 
 
   if(llwrite(fd, buffer, 6) < 0) {
