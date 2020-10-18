@@ -31,17 +31,18 @@ int main(int argc, char** argv) {
 
   /* Usado para testar a receção da trama de info pelo recetor e receção de RR pelo emissor*/
   printf("Send Info Frame\n");
-  unsigned char buf[8];
+  unsigned char buf[9];
   
   buf[0] = FLAG;
   buf[1] = A;
   buf[2] = I_0;
   buf[3] = buf[1] ^ buf[2];
   buf[4] = 0x17;
-  buf[5] = 0x14;
-  buf[6] = buf[4] ^ buf[5];
-  buf[7] = FLAG;
-
+  buf[5] = 0x7D;
+  buf[6] = 0x5D;
+  buf[7] = ESCAPE ^ 0x17;
+  buf[8] = FLAG;
+  
   write(fd, buf, sizeof(buf));
   
   // Aqui vai ter que conseguir ler se receber RR ou REJ

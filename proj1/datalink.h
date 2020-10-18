@@ -113,8 +113,8 @@ Control buildAck(int validDataField, int expectedSequenceNumber);
 
 
 /**
- * Aplica o mecanismo de byte stuffing para evitar o falso reconhecimento de uma flag ou caratér de escape no interior de uma trama, garantindo transparência
+ * Aplica o mecanismo de byte destuffing para recuperar os octetos originais (antes da operação de stuffing)
 */
-int byteStuffing();
+int byteDestuffing();
 
 #endif
