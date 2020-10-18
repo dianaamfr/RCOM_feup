@@ -7,6 +7,7 @@
 #include <string.h>
 #include "alarm.h"
 #include "utils.h"
+#include <stdbool.h>
 
 
 int llopen(int port, Status status){
@@ -386,4 +387,153 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 
   return C_RR_0;  // Trama repetida com erros nos dados
 
+}
+
+unsigned char createBCC(unsigned char a, unsigned char c) {
+    return a ^ c;
+}
+
+unsigned char createBCC_2(unsigned char* frame, int length) {
+
+  unsigned char bcc2 = frame[0];
+
+  for(int i = 1; i < length; i++){
+    bcc2 = bcc2 ^ frame[i];
+  }
+
+  return bcc2;
+}
+
+int createFrameI(unsigned char* frame, unsigned char controlField, unsigned char* infoField, int infoFieldLength) {
+
+  frame[0] = FLAG;
+
+  frame[1] = 0x03; 
+
+  frame[2] = controlField;
+
+  frame[3] = createBCC(frame[1], frame[2]);
+
+  for(int i = 0; i < infoFieldLength; i++) {
+    frame[i + 4] = infoField[i];
+  }
+
+  unsigned bcc2 = createBCC_2(infoField, infoFieldLength);
+
+  frame[infoFieldLength + 4] = bcc2;
+
+  frame[infoFieldLength + 5] = FLAG;
+
+  return 0;
+}
+
+int sendFrameI(unsigned char* frame, int fd, int length) {
+
+    int n;
+    if( (n = write(fd, frame, length)) <= 0){
+        return -1;
+    }
+    return n;
+}
+
+
+
+
+
+int llwrite(int fd, char* buffer, int length) {
+
+  unsigned char controlByte;
+  unsigned char answer_buffer[MAX_DATA_FIELD];
+
+  if(&dataLink->sequenceNumber == 0)
+    controlByte = C_N0;
+  else controlByte = C_N1;
+
+
+  if (createFrameI(dataLink->frame, controlByte,(unsigned char*) buffer, length) != 0) {
+    free(&dataLink->frame);
+    //close
+    return -1;
+  }
+
+  printf("AAAAAAAAAAA");
+
+
+/*
+
+  int numWritten;
+  bool dataSent = false;
+  
+  while(!dataSent) {
+
+    if((numWritten = sendFrameI(dataLink->frame, fd, length)) == -1) {
+      free(&dataLink->frame);
+      //closeNonCanonical(fd, &oldtio);
+      return -1;
+    }
+
+    printf("Sent I frame\n");
+
+    int read_value = -1;
+    int finish = 0;
+    int num_retr = 0;
+  
+    alarm(dataLink->timeout);
+  
+    unsigned char wantedBytes[2];
+  
+    if (controlByte == C_N0) {
+      wantedBytes[0] = C_RR_1;
+      wantedBytes[1] = C_REJ_0;
+    }
+    else if (controlByte == C_N0) {
+      wantedBytes[0] = C_RR_0;
+      wantedBytes[1] = C_REJ_1;
+    }
+  
+    while (finish != 1) {
+      read_value = 0;
+      if(read_value >= 0) { // read_value é o índice do wantedByte que foi encontrado
+        // Cancels alarm
+        alarm(0);
+        finish = 1;
+      }
+    }
+
+    if(read_value == -1){
+      printf("Closing file descriptor\n");
+      free(&dataLink->frame);
+      //closeNonCanonical(fd, &oldtio);
+      return -1;
+    }
+
+    if(read_value == 0) // read a RR
+      dataSent = true;
+    else // read a REJ
+      dataSent = false;
+  
+
+    printf("Received response frame ");
+  }
+
+
+  if (dataLink->sequenceNumber == 0)
+    dataLink->sequenceNumber = 1;
+  else if (dataLink->sequenceNumber == 1)
+    dataLink->sequenceNumber = 0;
+  else return -1;
+  
+  */
+
+  int numWritten;
+  if((numWritten = sendFrameI(dataLink->frame, fd, length)) == -1) {
+      free(&dataLink->frame);
+      //closeNonCanonical(fd, &oldtio);
+      return -1;
+  }
+
+  printf("OKKKKKKKKKKKKKKKKKKK");
+
+
+  return (numWritten - 6); // length of the data packet length sent to the receiver
 }

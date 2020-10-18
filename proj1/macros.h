@@ -14,8 +14,10 @@
 #define DELIMIT_INFO_SIZE  6
 #define MAX_DATA_FIELD     1024
 #define MAX_INFO_FRAME     MAX_DATA_FIELD + DELIMIT_INFO_SIZE
+#define MAX_PACKET_SIZE    MAX_DATA_FIELD + HEADER_SIZE
 
 #define CONTROL_BYTE      2
+
 
 /* DATA LINK */
 
@@ -25,6 +27,7 @@ typedef enum Status {
 
 #define A       0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
 #define FLAG    0x7E         /* Flag que delimita as tramas */
+#define ESC     0x7D
 
 /* Estado da rececao da trama SET */
 typedef enum State {
@@ -40,7 +43,11 @@ typedef enum Control {
     C_REJ_0 = 0x01,
     C_REJ_1 = 0x81,
     I_0 = 0x00,
-    I_1 = 0x40
+    I_1 = 0x40,
+    C_N0 = 0x00,
+    C_N1 = 0x40
 } Control;
+
+
 
 #endif

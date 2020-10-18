@@ -111,4 +111,7 @@ int isExpectedSequenceNumber();
 */
 Control buildAck(int validDataField, int expectedSequenceNumber);
 
+
+int llwrite(int fd, char* buffer, int length);
+
 #endif

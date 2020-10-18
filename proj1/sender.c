@@ -9,8 +9,6 @@
 #include "datalink.h"
 #include "utils.h"
 
- extern unsigned int tries;     
- extern unsigned int resend; 
 
 int main(int argc, char** argv) {
 
@@ -23,6 +21,7 @@ int main(int argc, char** argv) {
   }
 
   port = atoi(&argv[1][9]);
+  
   // A partir daqui será feito na app provavelmente
   if((fd = llopen(port, TRANSMITTER)) < 0){
     perror("llopen Transmitter");
@@ -31,8 +30,8 @@ int main(int argc, char** argv) {
 
   /* Usado para testar a receção da trama de info pelo recetor e receção de RR pelo emissor*/
   printf("Send Info Frame\n");
-  unsigned char buf[8];
-  
+
+  /*unsigned char buf[8];
   buf[0] = FLAG;
   buf[1] = A;
   buf[2] = I_0;
@@ -41,11 +40,25 @@ int main(int argc, char** argv) {
   buf[5] = 0x14;
   buf[6] = buf[4] ^ buf[5];
   buf[7] = FLAG;
+  write(fd, buf, sizeof(buf));*/
 
-  write(fd, buf, sizeof(buf));
-  
+  char buffer[20];
+  buffer[0] = 'o';
+  buffer[1] = 'l';
+  buffer[2] = 'a';
+  buffer[3] = '!';
+  buffer[4] = ':';
+  buffer[5] = ')';
+
+
+  if(llwrite(fd, buffer, 6) < 0) {
+    printf("deu erro");
+    return -1;
+  }
+
+
   // Aqui vai ter que conseguir ler se receber RR ou REJ
-  receiveSupervisionFrame(fd, C_RR_1);
+  //receiveSupervisionFrame(fd, C_RR_1);
   
   return 0;
 }
