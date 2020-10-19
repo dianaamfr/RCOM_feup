@@ -325,7 +325,10 @@ int receiveInfoFrame(int fd) {
     
     }
   }
-  
+  if(i==MAX_INFO_FRAME){
+    printf("max I frame size exceeded");
+    return -1;
+  }
   int dataSize = i - DELIMIT_INFO_SIZE;
   if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
     return dataSize;
@@ -389,6 +392,8 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 
 }
 
+
+
 unsigned char createBCC(unsigned char a, unsigned char c) {
     return a ^ c;
 }
@@ -438,6 +443,58 @@ int sendFrameI(int fd, int length) {
 
 
 
+int byte_stuffing( int length) {
+
+  int num = 0; //number of packet bytes
+
+  unsigned char *aux = malloc(sizeof(unsigned char) * (length + 6));  // buffer aux
+  if(aux == NULL){
+    return -1;
+  }
+
+  *dataLink->frame = realloc(dataLink->frame ,sizeof(unsigned char ) * ((length + 1) * 2) + 5); // max space
+  if (&dataLink->frame == NULL){
+    free(aux);
+    return -1;
+  }
+
+  for(int i = 0; i < length + 6 ; i++){
+    aux[i] = dataLink->frame[i];
+  }
+
+  int j = 4; //where data starts
+
+  for(int i = 4; i < (length + 6); i++){ //fills frame buffer
+    if(aux[i] == FLAG && i != (length + 5)) {
+      dataLink->frame[j] = ESC;
+      dataLink->frame[j+1] = STUFFING_FLAG;
+      j = j + 2;
+      num++;
+    }
+    else if(aux[i] == ESC && i != (length + 5)) {
+      dataLink->frame[j] = ESC;
+      dataLink->frame[j+1] = STUFFING_ESC;
+      j = j + 2;
+      num++;
+    }
+    else{
+      dataLink->frame[j] = aux[i];
+      j++;
+    }
+  }
+
+  *dataLink->frame = realloc(dataLink->frame, sizeof(unsigned char) * (length + 6 + num)); //ocupar so espaço usado
+  if(&dataLink->frame == NULL){
+    free(aux);
+    return -1;
+  }
+
+  free(aux);
+
+  return j;
+}
+
+
 
 
 int llwrite(int fd, unsigned char* buffer, int length) {
@@ -455,18 +512,25 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     //close
     return -1;
   }
+ 
+ //stuffing
+  /*int lengthst; //length after stuffing
+  if((lengthst = byte_stuffing(length)) < 0){
+    free(dataLink->frame);
+    //close()
+    return -1;
+  }
+  length=lengthst;*/
 
-
-/*
 
   int numWritten;
   bool dataSent = false;
   
   while(!dataSent) {
 
-    if((numWritten = sendFrameI(dataLink->frame, fd, length)) == -1) {
+    if((numWritten = sendFrameI( fd, length)) == -1) {
       free(&dataLink->frame);
-      //closeNonCanonical(fd, &oldtio);
+      //close();
       return -1;
     }
 
@@ -478,20 +542,20 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   
     alarm(dataLink->timeout);
   
-    unsigned char wantedBytes[2];
+    unsigned char bytes[2];
   
     if (controlByte == C_N0) {
-      wantedBytes[0] = C_RR_1;
-      wantedBytes[1] = C_REJ_0;
+      bytes[0] = C_RR_1;
+      bytes[1] = C_REJ_0;
     }
-    else if (controlByte == C_N0) {
-      wantedBytes[0] = C_RR_0;
-      wantedBytes[1] = C_REJ_1;
+    else if (controlByte == C_N1) {
+      bytes[0] = C_RR_0;
+      bytes[1] = C_REJ_1;
     }
   
     while (finish != 1) {
-      read_value = 0;
-      if(read_value >= 0) { // read_value é o índice do wantedByte que foi encontrado
+      read_value = receiveSupervisionFrame(fd, C_RR_1); //função para verificar, 0->RR, 1->REJ
+      if(read_value >= 0) { // indice do bytes
         // Cancels alarm
         alarm(0);
         finish = 1;
@@ -499,9 +563,8 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     }
 
     if(read_value == -1){
-      printf("Closing file descriptor\n");
       free(&dataLink->frame);
-      //closeNonCanonical(fd, &oldtio);
+      //close()
       return -1;
     }
 
@@ -521,16 +584,6 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     dataLink->sequenceNumber = 0;
   else return -1;
   
-  */
-
-  int numWritten;
-  if((numWritten = sendFrameI(fd, length)) == -1) {
-      free(&dataLink->frame);
-      //closeNonCanonical(fd, &oldtio);
-      return -1;
-  }
-
-  printf("OKKKKKKKKKKKKKKKKKKK");
 
 
   return (numWritten - 6); // length of the data packet length sent to the receiver

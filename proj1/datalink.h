@@ -113,5 +113,6 @@ Control buildAck(int validDataField, int expectedSequenceNumber);
 
 
 int llwrite(int fd, unsigned char* buffer, int length);
+int byte_stuffing( int length);
 
 #endif
