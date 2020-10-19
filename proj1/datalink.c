@@ -555,7 +555,7 @@ int byte_stuffing(int length) {
 int byteDestuffing(int length){
  
   for(int i=0; i< length; i++){
-    if(dataLink->frame[i] == ESCAPE){
+    if(dataLink->frame[i] == ESC){
       printf("Found escape in i = %d\n", i);
       memmove(&dataLink->frame[i], &dataLink->frame[i+1], length-i-1);
       dataLink->frame[i] ^= STUFF_OCT;
