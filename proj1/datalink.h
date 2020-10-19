@@ -136,4 +136,10 @@ int sendFrameI(int fd, int length);
 
 int byte_stuffing( int length);
 
+
+/**
+ * Aplica o mecanismo de byte destuffing para recuperar os octetos originais (antes da operação de stuffing)
+*/
+int byteDestuffing();
+
 #endif

@@ -373,6 +373,9 @@ int receiveInfoFrame(int fd) {
     printf("max I frame size exceeded");
     return -1;
   }
+  
+  i = byteDestuffing(i);
+
   int dataSize = i - DELIMIT_INFO_SIZE;
   if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
     return dataSize;
@@ -496,9 +499,9 @@ int sendFrameI(int fd, int length) {
 
 // Byte Stuffing e Destuffing
 
-/*int byte_stuffing( int length) {
+int byte_stuffing(int length) {
 
-  int num = 0; //number of packet bytes
+  /*int num = 0; //number of packet bytes
 
   unsigned char *aux = malloc(sizeof(unsigned char) * (length + 6));  // buffer aux
   if(aux == NULL){
@@ -544,5 +547,27 @@ int sendFrameI(int fd, int length) {
 
   free(aux);
 
-  return j;
-}*/
+  return j;*/
+
+  return 0;
+}
+
+int byteDestuffing(int length){
+ 
+  for(int i=0; i< length; i++){
+    if(dataLink->frame[i] == ESCAPE){
+      printf("Found escape in i = %d\n", i);
+      memmove(&dataLink->frame[i], &dataLink->frame[i+1], length-i-1);
+      dataLink->frame[i] ^= STUFF_OCT;
+      length--;
+    }
+  }
+
+  printf("Destuffing complete: \n");
+  for(int i = 0; i < length; i++){
+    printf("%4X",dataLink->frame[i]);
+  }
+  printf("\n");
+
+  return length;
+}
