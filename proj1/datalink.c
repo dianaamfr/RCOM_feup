@@ -7,8 +7,8 @@
 #include <string.h>
 #include "alarm.h"
 #include "utils.h"
-#include <stdbool.h>
 
+// Estabelecimento da ligação de dados
 
 int llopen(int port, Status status){
 
@@ -21,7 +21,7 @@ int llopen(int port, Status status){
   if(fd == -1){
     restoreConfiguration(fd, &oldtio);
     return -1;
-  }
+  } 
 
   tries = 0;     
   resend = FALSE; 
@@ -67,8 +67,10 @@ int initDataLink(int port) {
 
 	dataLink->baudRate = BAUDRATE;
 	dataLink->sequenceNumber = 0; // Começar com número de sequência 0
+
   dataLink->timeout = TIMEOUT;
   dataLink->numTransmissions = MAX_RETR;
+  setMaxTries(dataLink->numTransmissions);
 
   return 0;
 }
@@ -76,7 +78,7 @@ int initDataLink(int port) {
 
 int openReceiver(int fd) {
 
-  if(receiveSupervisionFrame(fd, C_SET) == -1) { /* Espera por trama SET*/
+  if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { /* Espera por trama SET*/
     perror("Error receiving SET frame");
     return -1;
   }
@@ -95,18 +97,15 @@ int openTransmitter(int fd) {
 
   signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
 
-  tries = 0;     
-  resend = FALSE; 
-
   /* (Re)transmissao da trama SET */
-  while(tries < MAX_RETR){
+  while(tries < dataLink->numTransmissions){
     
     sendSupervisionFrame(fd, C_SET);
 
     resend = FALSE; 
-    alarm(TIMEOUT); /* Inicia espera por UA */
+    alarm(dataLink->timeout); /* Inicia espera por UA */
 
-    if (receiveSupervisionFrame(fd, C_UA) == 0){
+    if (receiveSupervisionFrame(fd, SETUP, TRANSMITTER) != -1){
       resend = FALSE; 
       alarm(0);
       return 0;
@@ -118,72 +117,108 @@ int openTransmitter(int fd) {
 };
 
 
-int receiveSupervisionFrame(int fd, Control control) {
+// Receção e envio de tramas de supervisão
 
-  State uaState = START;
+unsigned char receiveSupervisionFrame(int fd, Period period, Status status) {
+
+  State state = START;
   unsigned char ch, bcc = 0;
-  int nr;  
+  int nr;
+  Control control;
 
   printf("Bytes read: \n");
 
   while(resend == FALSE) {
 
-    if(uaState != STOP){
+    if(state != STOP){
       nr = read(fd, &ch, 1);
       if(nr > 0)
         printf("%4X",ch);
     }                  
 
-    switch(uaState) {
+    switch(state) {
       case START:
         if (ch == FLAG){
           bcc = 0;
-          uaState = FLAG_RCV;
+          state = FLAG_RCV;
         }
         break;
 
       case FLAG_RCV:
         if (ch == A){
-          uaState = A_RCV;
-          bcc ^= ch;
+          state = A_RCV;
+          bcc = createBCC(bcc,ch);
         }
         else if (ch != FLAG)
-          uaState = START;
+          state = START;
         break;
 
       case A_RCV:
-        if (ch == control){
-          uaState = C_RCV;
-          bcc ^= ch;
+        if (expectedControl(period, status, ch) == TRUE){
+          control = ch;
+          state = C_RCV;
+          bcc = createBCC(bcc,ch);
         }
         else if (ch != FLAG)
-          uaState = START;
+          state = START;
         else
-          uaState = FLAG_RCV;
+          state = FLAG_RCV;
         break;
 
       case C_RCV:
         if (ch == FLAG)
-          uaState = FLAG_RCV;
+          state = FLAG_RCV;
         else if (ch == bcc)
-          uaState = BCC_OK;
+          state = BCC_OK;
         else
-          uaState = START;  
+          state = START;  
         break;
 
       case BCC_OK:
         if(ch == FLAG) 
-          uaState = STOP;
+          state = STOP;
         break;
 
       case STOP:
         printf("\nReceived %s message with success\n", getControlName(control));
-        return 0;
+        return control;
     }
   }
   
   return -1;
 
+}
+
+
+int expectedControl(Period period, Status status, unsigned char ch) {
+  int result = FALSE;
+
+  switch (status)
+  {
+    case RECEIVER:
+      if(period == SETUP && ch == C_SET) // Na Fase de Estabelecimento da ligação o Recetor espera a trama SET
+        result = TRUE;
+      break;
+
+    case TRANSMITTER: 
+      if(period == SETUP && ch == C_UA) // Na Fase de Estabelecimento da ligação o Transmissor espera a trama UA
+        result = TRUE;
+
+      else if(period == TRANSFER){  // Na Fase de Transferencia de dados o Transmissor espera as tramas RR ou REJ
+        if((ch == C_RR_1 || ch == C_REJ_0) && dataLink->sequenceNumber == 0) // Se ns = 0, espera RR_1 ou REJ_0
+          result = TRUE;
+       
+        else if((ch == C_RR_0 || ch == C_REJ_1) && dataLink->sequenceNumber == 1)  // Se ns = 1, espera RR_0 ou REJ_1
+          result = TRUE;
+      }
+      break;
+
+    default:
+      printf("Invalid Status in Expected Control \n");
+      break;
+  }
+
+  return result;
 }
 
 
@@ -212,6 +247,8 @@ int sendSupervisionFrame(int fd, Control control) {
 }
 
 
+// Tranferencia de Dados - leitura da porta de serie
+
 int llread(int fd, unsigned char* buffer){
 
   int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
@@ -220,9 +257,16 @@ int llread(int fd, unsigned char* buffer){
   if(dataFieldSize == -1) 
     validDataField = FALSE;
 
-  int expectedSequenceNumber = isExpectedSequenceNumber();
 
+  // Verificar se o ns recebido é o que se pretende
+  int expectedSequenceNumber;
+  int receivedSequenceNumber = (dataLink->frame[CONTROL_BYTE] >> 6) & 0x01;
+  if(receivedSequenceNumber == dataLink->sequenceNumber)
+    expectedSequenceNumber = TRUE;
+  else
+    expectedSequenceNumber = FALSE;
   
+
   Control ack = buildAck(validDataField, expectedSequenceNumber);
 
   if(sendSupervisionFrame(fd, ack) == -1 ){
@@ -270,7 +314,7 @@ int receiveInfoFrame(int fd) {
 
       case FLAG_RCV:
         if (ch == A){
-          bcc1 ^= ch;
+          bcc1 = createBCC(bcc1,ch);
 
           iState = A_RCV;
           dataLink->frame[i] = ch;
@@ -282,7 +326,7 @@ int receiveInfoFrame(int fd) {
 
       case A_RCV:
         if (isInfoSequenceNumber(ch) == TRUE){
-          bcc1 ^= ch;
+          bcc1 = bcc1 ^ch;
 
           iState = C_RCV;
           dataLink->frame[i] = ch;
@@ -325,44 +369,16 @@ int receiveInfoFrame(int fd) {
     
     }
   }
-  
+  if(i==MAX_INFO_FRAME){
+    printf("max I frame size exceeded");
+    return -1;
+  }
   int dataSize = i - DELIMIT_INFO_SIZE;
   if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
     return dataSize;
 
   return -1; // Erro no BCC2
 
-}
-
-
-int validBcc2(unsigned char * dataField, int length) {
-  unsigned char bcc_received = dataField[length - 1];
-  unsigned char bcc_calculated = 0;
-
-  for(int i = 0; i < length - 1; i++){ // XOR dos bytes de dados
-    bcc_calculated ^= dataField[i];
-  }
-
-  if(bcc_calculated == bcc_received)
-    return 0;
-  
-  return -1;
-}
-
-
-int isInfoSequenceNumber(unsigned char byte){
-  if(byte == I_0 || byte == I_1)
-    return TRUE;
-  return FALSE; 
-}
-
-
-int isExpectedSequenceNumber(){
-  int receivedSequenceNumber = (dataLink->frame[CONTROL_BYTE] >> 7) & 0x01;
-
-  if(receivedSequenceNumber == dataLink->sequenceNumber)
-    return TRUE;
-  return FALSE;
 }
 
 
@@ -389,20 +405,60 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 
 }
 
-unsigned char createBCC(unsigned char a, unsigned char c) {
-    return a ^ c;
-}
 
-unsigned char createBCC_2(unsigned char* frame, int length) {
+// Tranferencia de Dados - escrita na porta de serie
 
-  unsigned char bcc2 = frame[0];
+int llwrite(int fd, unsigned char* buffer, int length) {
 
-  for(int i = 1; i < length; i++){
-    bcc2 ^= frame[i];
+  Control controlByte;
+  //unsigned char answer_buffer[MAX_DATA_FIELD];
+
+  if(dataLink->sequenceNumber == 0)
+    controlByte = C_N0;
+  else controlByte = C_N1;
+
+
+  if (createFrameI(controlByte, buffer, length) != 0) {
+    free(&dataLink->frame);
+    //close
+    return -1;
   }
 
-  return bcc2;
+  int numWritten;
+  unsigned receivedControl;
+
+  printf("Sent I frame\n");
+
+  // Mecanismo de retransmissão da trama I
+  while(tries < dataLink->numTransmissions){
+    
+    if((numWritten = sendFrameI(fd, length + DELIMIT_INFO_SIZE)) == -1) {
+      free(&dataLink->frame);
+      //close();
+      return -1;
+    }
+
+    resend = FALSE; 
+    alarm(dataLink->timeout); /* Inicia espera por RR ou REJ */
+
+    // Recebeu RR_!ns ou REJ_ns
+    if ((receivedControl = receiveSupervisionFrame(fd, TRANSFER, TRANSMITTER)) != -1){
+
+      if(receivedControl >> 7 == !dataLink->sequenceNumber){  // Recebeu o numero de serie esperado (RR_!ns)
+        resend = FALSE; 
+        alarm(0);
+
+        dataLink->sequenceNumber = !dataLink->sequenceNumber; // Altera numero de serie para a proxima trama
+        break;
+      }
+
+    } 
+
+  }
+
+  return (numWritten - DELIMIT_INFO_SIZE); // length of the data packet length sent to the receiver
 }
+
 
 int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLength) {
 
@@ -412,7 +468,7 @@ int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLe
 
   dataLink->frame[2] = controlField;
 
-  dataLink->frame[3] = createBCC(dataLink->frame[1], dataLink->frame[2]);
+  dataLink->frame[3] = dataLink->frame[1] ^ dataLink->frame[2];
 
   for(int i = 0; i < infoFieldLength; i++) {
     dataLink->frame[i + 4] = infoField[i];
@@ -427,111 +483,66 @@ int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLe
   return 0;
 }
 
+
 int sendFrameI(int fd, int length) {
 
     int n;
-    if( (n = write(fd, dataLink->frame, length + DELIMIT_INFO_SIZE)) <= 0){
+    if((n = write(fd, dataLink->frame, length)) <= 0){
         return -1;
     }
     return n;
 }
 
 
+// Byte Stuffing e Destuffing
 
+/*int byte_stuffing( int length) {
 
+  int num = 0; //number of packet bytes
 
-int llwrite(int fd, unsigned char* buffer, int length) {
-
-  Control controlByte;
-  unsigned char answer_buffer[MAX_DATA_FIELD];
-
-  if(&dataLink->sequenceNumber == 0)
-    controlByte = C_N0;
-  else controlByte = C_N1;
-
-
-  if (createFrameI(controlByte, buffer, length) != 0) {
-    free(&dataLink->frame);
-    //close
+  unsigned char *aux = malloc(sizeof(unsigned char) * (length + 6));  // buffer aux
+  if(aux == NULL){
     return -1;
   }
 
-
-/*
-
-  int numWritten;
-  bool dataSent = false;
-  
-  while(!dataSent) {
-
-    if((numWritten = sendFrameI(dataLink->frame, fd, length)) == -1) {
-      free(&dataLink->frame);
-      //closeNonCanonical(fd, &oldtio);
-      return -1;
-    }
-
-    printf("Sent I frame\n");
-
-    int read_value = -1;
-    int finish = 0;
-    int num_retr = 0;
-  
-    alarm(dataLink->timeout);
-  
-    unsigned char wantedBytes[2];
-  
-    if (controlByte == C_N0) {
-      wantedBytes[0] = C_RR_1;
-      wantedBytes[1] = C_REJ_0;
-    }
-    else if (controlByte == C_N0) {
-      wantedBytes[0] = C_RR_0;
-      wantedBytes[1] = C_REJ_1;
-    }
-  
-    while (finish != 1) {
-      read_value = 0;
-      if(read_value >= 0) { // read_value é o índice do wantedByte que foi encontrado
-        // Cancels alarm
-        alarm(0);
-        finish = 1;
-      }
-    }
-
-    if(read_value == -1){
-      printf("Closing file descriptor\n");
-      free(&dataLink->frame);
-      //closeNonCanonical(fd, &oldtio);
-      return -1;
-    }
-
-    if(read_value == 0) // read a RR
-      dataSent = true;
-    else // read a REJ
-      dataSent = false;
-  
-
-    printf("Received response frame ");
+  *dataLink->frame = realloc(dataLink->frame ,sizeof(unsigned char ) * ((length + 1) * 2) + 5); // max space
+  if (&dataLink->frame == NULL){
+    free(aux);
+    return -1;
   }
 
-
-  if (dataLink->sequenceNumber == 0)
-    dataLink->sequenceNumber = 1;
-  else if (dataLink->sequenceNumber == 1)
-    dataLink->sequenceNumber = 0;
-  else return -1;
-  
-  */
-
-  int numWritten;
-  if((numWritten = sendFrameI(fd, length)) == -1) {
-      free(&dataLink->frame);
-      //closeNonCanonical(fd, &oldtio);
-      return -1;
+  for(int i = 0; i < length + 6 ; i++){
+    aux[i] = dataLink->frame[i];
   }
 
-  printf("OKKKKKKKKKKKKKKKKKKK");
+  int j = 4; //where data starts
 
+  for(int i = 4; i < (length + 6); i++){ //fills frame buffer
+    if(aux[i] == FLAG && i != (length + 5)) {
+      dataLink->frame[j] = ESC;
+      dataLink->frame[j+1] = STUFFING_FLAG;
+      j = j + 2;
+      num++;
+    }
+    else if(aux[i] == ESC && i != (length + 5)) {
+      dataLink->frame[j] = ESC;
+      dataLink->frame[j+1] = STUFFING_ESC;
+      j = j + 2;
+      num++;
+    }
+    else{
+      dataLink->frame[j] = aux[i];
+      j++;
+    }
+  }
 
-  return (numWritten - 6); // length of the data packet length sent to the receiver
-}
+  *dataLink->frame = realloc(dataLink->frame, sizeof(unsigned char) * (length + 6 + num)); //ocupar so espaço usado
+  if(&dataLink->frame == NULL){
+    free(aux);
+    return -1;
+  }
+
+  free(aux);
+
+  return j;
+}*/

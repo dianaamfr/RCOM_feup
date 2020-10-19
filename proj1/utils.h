@@ -34,4 +34,35 @@ int restoreConfiguration(int fd, struct termios* oldtio);
 */
 char* getControlName(Control control);
 
+/**
+ * Retorna o XOR (ou exclusivo) dos octetos a e c
+ * @param a octeto 
+ * @param c octeto
+ * @return ou exclusivo dos octetos
+*/
+unsigned char createBCC(unsigned char a, unsigned char c);
+
+/**
+ * Retorna o XOR (ou exclusivo) dos octetos da frame
+ * @param frame campo de dados
+ * @param length tamanho do campo de dados
+ * @return ou exclusivo dos octetos
+*/
+unsigned char createBCC_2(unsigned char* frame, int length);
+
+/**
+ * Validação do BCC2 
+ * @param dataField campo de dados(bcc2 inclusive)
+ * @param length tamanho do campo de dados
+ * @return 0 se válido e -1 se inválido
+*/
+int validBcc2(unsigned char * dataField, int length);
+
+/**
+ * Verifica se o campo de controlo correponde ao de uma trama de informação
+ * @param byte o octeto a verificar
+ * @return 0(TRUE) no caso de se tratar de uma trama de informação e 1(FALSE) caso contrário
+*/
+int isInfoSequenceNumber(unsigned char byte);
+
 #endif
