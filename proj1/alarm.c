@@ -8,8 +8,12 @@ void alarmHandler(int sig){
     tries++;
 
     printf("\nTimeout! Tries used: %d \n", tries);
-    if(tries == MAX_RETR)
+    if(tries == maxTries)
         printf("Maximum retransmission tries exceeded.\n");
 
     return;
+}
+
+void setMaxTries(unsigned int max){
+    maxTries = max;
 }

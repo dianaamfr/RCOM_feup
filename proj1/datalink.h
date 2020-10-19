@@ -59,10 +59,14 @@ int llread(int fd, unsigned char* buffer);
 /**
  *  Maquina de estados para receber trama de supervisão ou não numerada(SET, UA, RR, REJ, DISC)
  * @param fd descritor da porta de série
- * @param control campo de controlo da trama
+ * @param period fase do protocolo de ligação de dados
+ * @param status interviniente que recebe a frame
  * @return 0 em caso de sucesso e -1 em caso de falha
 */
-int receiveSupervisionFrame(int fd, Control control);
+int receiveSupervisionFrame(int fd, Period period, Status status);
+
+
+int expectedControl(Period period, Status status, unsigned char ch);
 
 
 /**
@@ -102,6 +106,15 @@ int isInfoSequenceNumber(unsigned char byte);
 */
 int isExpectedSequenceNumber();
 
+/**
+ * XOR entre a e b
+*/
+unsigned char createBCC(unsigned char a, unsigned char c);
+
+/**
+ * XOR de todos os elementos da frame
+*/
+unsigned char createBCC_2(unsigned char* frame, int length);
 
 /**
  * Determina resposta a enviar ao emissor da trama, consoante o número de série e a validade do campo de dados
@@ -111,8 +124,21 @@ int isExpectedSequenceNumber();
 */
 Control buildAck(int validDataField, int expectedSequenceNumber);
 
-
+/**
+ * Escrita de um pacote de dados na porta de série
+ * @param fd descritor da porta de série
+ * @param buffer onde é recebido o pacote de dados
+ * @return número de carateres escritos ou -1 em caso de falha
+*/
 int llwrite(int fd, unsigned char* buffer, int length);
+
+/**
+ * Criação da frame I 
+ * @param controlField C_N0 ou C_N1, consoante o número de série 
+*/
+int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLength);
+
+
 int byte_stuffing( int length);
 
 #endif

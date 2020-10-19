@@ -5,6 +5,7 @@
 
 unsigned int tries ;     /* Numero de tentativas usadas para retransmissao do comando SET e espera do UA */
 unsigned int resend; /* Flag para assinalar quando passou o TIMEOUT e é necessário reenviar a trama*/
+unsigned int maxTries;
 
 /**
  * Handler para o sinal SIGALARM
@@ -14,5 +15,7 @@ unsigned int resend; /* Flag para assinalar quando passou o TIMEOUT e é necess�
  * @param sig sinal recebido
 */
 void alarmHandler(int sig);
+
+void setMaxTries(unsigned int max);
 
 #endif

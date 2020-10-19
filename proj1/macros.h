@@ -44,12 +44,12 @@ typedef enum Control {
     C_RR_1 = 0x85,
     C_REJ_0 = 0x01,
     C_REJ_1 = 0x81,
-    I_0 = 0x00,
-    I_1 = 0x40,
     C_N0 = 0x00,
     C_N1 = 0x40
 } Control;
 
-
+typedef enum Period {
+    SETUP, TRANSFER, END
+} Period;
 
 #endif

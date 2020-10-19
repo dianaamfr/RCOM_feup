@@ -103,11 +103,11 @@ char* getControlName(Control control) {
         str ="REJ_1";
         break;
     
-    case I_0:
+    case C_N0:
         str ="I_0";
         break;
 
-    case I_1:
+    case C_N1:
         str ="I_1";
         break;
     
