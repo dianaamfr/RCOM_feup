@@ -28,6 +28,7 @@ int main(int argc, char** argv) {
 
   /* Usado para testar a receção da trama de info pelo recetor e envio de RR*/
   unsigned char buf[20];
+  unsigned char buf1[20];
   int nr = llread(fd, buf);
 
   printf("Bytes read from port: \n");
@@ -35,7 +36,16 @@ int main(int argc, char** argv) {
     printf("%4X",buf[i]);
   }
 
+  nr = llread(fd, buf1);
+
+  printf("Bytes read from port: \n");
+  for(int i = 0; i < nr; i++){
+    printf("%4X",buf1[i]);
+  }
+
   printf("\n");
+
+  llclose(fd);
 
   return 0;
 }

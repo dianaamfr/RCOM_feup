@@ -13,7 +13,7 @@
 int llopen(int port, Status status){
 
   int fd;
-  struct termios oldtio;
+
 
   initDataLink(port);
 
@@ -422,7 +422,6 @@ int llwrite(int fd, unsigned char* buffer, int length) {
 
 
   if (createFrameI(controlByte, buffer, length) != 0) {
-    free(&dataLink->frame);
     //close
     return -1;
   }
@@ -436,7 +435,6 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   while(tries < dataLink->numTransmissions){
     
     if((numWritten = sendFrameI(fd, length + DELIMIT_INFO_SIZE)) == -1) {
-      free(&dataLink->frame);
       //close();
       return -1;
     }
@@ -498,7 +496,7 @@ int sendFrameI(int fd, int length) {
 
 
 // Byte Stuffing e Destuffing
-
+// TODO
 int byte_stuffing(int length) {
 
   /*int num = 0; //number of packet bytes
@@ -552,6 +550,7 @@ int byte_stuffing(int length) {
   return 0;
 }
 
+
 int byteDestuffing(int length){
  
   for(int i=0; i< length; i++){
@@ -570,4 +569,12 @@ int byteDestuffing(int length){
   printf("\n");
 
   return length;
+}
+
+// TODO - enviar DISC / receber DISC
+int llclose(int fd){
+  restoreConfiguration(fd,&oldtio);
+  free(dataLink);
+
+  return 0;
 }

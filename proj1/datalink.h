@@ -13,6 +13,7 @@ typedef struct linkLayer {
 } linkLayer;
 
 linkLayer* dataLink;
+struct termios oldtio;
 
 // Estabelecimento da ligação de dados
 
@@ -134,6 +135,7 @@ int sendFrameI(int fd, int length);
 
 // Byte Stuffing e Destuffing
 
+// TODO
 int byte_stuffing( int length);
 
 
@@ -141,5 +143,8 @@ int byte_stuffing( int length);
  * Aplica o mecanismo de byte destuffing para recuperar os octetos originais (antes da operação de stuffing)
 */
 int byteDestuffing();
+
+// TODO - terminacao com envio e rececao de DISC; para ja so liberta a memoria e restaura configuracao da porta
+int llclose(int fd);
 
 #endif

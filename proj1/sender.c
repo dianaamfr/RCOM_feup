@@ -33,10 +33,10 @@ int main(int argc, char** argv) {
 
   unsigned char buffer[20];
   buffer[0] = 0x17;
-  buffer[1] = 0x34;
-  buffer[2] = 0x36;
+  buffer[1] = 0x30;
+  buffer[2] = 0x16;
   buffer[3] = 0x93;
-  buffer[4] = 0x54;
+  buffer[4] = 0x50;
   buffer[5] = 0x77;
 
 
@@ -45,8 +45,12 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  // Aqui vai ter que conseguir ler se receber RR ou REJ
-  //receiveSupervisionFrame(fd, C_RR_1);
+  if(llwrite(fd, buffer, 6) < 0) {
+    printf("deu erro");
+    return -1;
+  }
+
+  llclose(fd);
   
   return 0;
 }
