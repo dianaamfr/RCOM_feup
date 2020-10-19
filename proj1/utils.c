@@ -117,3 +117,42 @@ char* getControlName(Control control) {
 
     return str;
 };
+
+
+unsigned char createBCC(unsigned char a, unsigned char c) {
+  return a ^ c;
+}
+
+
+unsigned char createBCC_2(unsigned char* frame, int length) {
+
+  unsigned char bcc2 = frame[0];
+
+  for(int i = 1; i < length; i++){
+    bcc2 = createBCC(bcc2,frame[i]);
+  }
+
+  return bcc2;
+}
+
+
+int validBcc2(unsigned char * dataField, int length) {
+  unsigned char bcc_received = dataField[length - 1];
+  unsigned char bcc_calculated = 0;
+
+  for(int i = 0; i < length - 1; i++){ // XOR dos bytes de dados
+    bcc_calculated = createBCC(bcc_calculated, dataField[i]);
+  }
+
+  if(bcc_calculated == bcc_received)
+    return 0;
+  
+  return -1;
+}
+
+
+int isInfoSequenceNumber(unsigned char byte){
+  if(byte == C_N0 || byte == C_N1)
+    return TRUE;
+  return FALSE; 
+}
