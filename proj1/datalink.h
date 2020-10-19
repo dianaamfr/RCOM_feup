@@ -61,9 +61,9 @@ int llread(int fd, unsigned char* buffer);
  * @param fd descritor da porta de série
  * @param period fase do protocolo de ligação de dados
  * @param status interviniente que recebe a frame
- * @return 0 em caso de sucesso e -1 em caso de falha
+ * @return campo de controlo em caso de sucesso e -1 em caso de falha
 */
-int receiveSupervisionFrame(int fd, Period period, Status status);
+unsigned char receiveSupervisionFrame(int fd, Period period, Status status);
 
 
 int expectedControl(Period period, Status status, unsigned char ch);

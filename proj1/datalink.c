@@ -104,7 +104,7 @@ int openTransmitter(int fd) {
     resend = FALSE; 
     alarm(dataLink->timeout); /* Inicia espera por UA */
 
-    if (receiveSupervisionFrame(fd, SETUP, TRANSMITTER) == 0){
+    if (receiveSupervisionFrame(fd, SETUP, TRANSMITTER) != -1){
       resend = FALSE; 
       alarm(0);
       return 0;
@@ -116,7 +116,7 @@ int openTransmitter(int fd) {
 };
 
 
-int receiveSupervisionFrame(int fd, Period period, Status status) {
+unsigned char receiveSupervisionFrame(int fd, Period period, Status status) {
 
   State state = START;
   unsigned char ch, bcc = 0;
@@ -178,7 +178,7 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
 
       case STOP:
         printf("\nReceived %s message with success\n", getControlName(control));
-        return 0;
+        return control;
     }
   }
   
@@ -526,7 +526,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   Control controlByte;
   //unsigned char answer_buffer[MAX_DATA_FIELD];
 
-  if(&dataLink->sequenceNumber == 0)
+  if(dataLink->sequenceNumber == 0)
     controlByte = C_N0;
   else controlByte = C_N1;
 
@@ -536,82 +536,42 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     //close
     return -1;
   }
- 
- //stuffing
-  /*int lengthst; //length after stuffing
-  if((lengthst = byte_stuffing(length)) < 0){
-    free(dataLink->frame);
-    //close()
-    return -1;
-  }
-  length=lengthst;*/
 
-/*
   int numWritten;
-  
-  tries = 0;     
-  resend = FALSE; 
 
-  if((numWritten = sendFrameI(fd, length + DELIMIT_INFO_SIZE)) == -1) {
-    free(&dataLink->frame);
-    //close();
-    return -1;
-  }
+  unsigned char ack, receivedControl;
+  
+  if (controlByte == C_N0) 
+    ack = C_RR_1;
+  else if (controlByte == C_N1)
+    ack = C_RR_0;
+  
 
   printf("Sent I frame\n");
-  
-  while(resend == FALSE) {
 
-    int read_value = -1;
-    int finish = 0;
-    int num_retr = 0;
-  
-    alarm(dataLink->timeout);
-  
-    unsigned char bytes[2];
-  
-    if (controlByte == C_N0) {
-      bytes[0] = C_RR_1;
-      bytes[1] = C_REJ_0;
-    }
-    else if (controlByte == C_N1) {
-      bytes[0] = C_RR_0;
-      bytes[1] = C_REJ_1;
-    }
-  
-    while (finish != 1) {
-      read_value = receiveSupervisionFrame(fd, C_RR_1); //função para verificar, 0->RR, 1->REJ
-      if(read_value >= 0) { // indice do bytes
-        // Cancels alarm
-        alarm(0);
-        finish = 1;
-      }
-    }
-
-    if(read_value == -1){
+  while(tries < dataLink->numTransmissions){
+    
+    if((numWritten = sendFrameI(fd, length + DELIMIT_INFO_SIZE)) == -1) {
       free(&dataLink->frame);
-      //close()
+      //close();
       return -1;
     }
 
-    if(read_value == 0) // read a RR
-      dataSent = TRUE;
-    else // read a REJ
-      dataSent = FALSE;
+    resend = FALSE; 
+    alarm(dataLink->timeout); /* Inicia espera por RR ou REJ */
+
+    // Recebeu RR ou REJ
+    if ((receivedControl = receiveSupervisionFrame(fd, TRANSFER, TRANSMITTER)) != -1){
+      if(receivedControl == ack){
+        resend = FALSE; 
+        alarm(0);
+        break;
+      }
+
+    } 
+
+  }
   
 
-    printf("Received response frame ");
-  }
-
-
-  if (dataLink->sequenceNumber == 0)
-    dataLink->sequenceNumber = 1;
-  else if (dataLink->sequenceNumber == 1)
-    dataLink->sequenceNumber = 0;
-  else return -1;
-  */
-
-
-  //return (numWritten - 6); // length of the data packet length sent to the receiver
-  return length;
+  return (numWritten - DELIMIT_INFO_SIZE); // length of the data packet length sent to the receiver
 }
