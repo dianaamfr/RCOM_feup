@@ -442,19 +442,24 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     resend = FALSE; 
     alarm(dataLink->timeout); /* Inicia espera por RR ou REJ */
 
-    // Recebeu RR_!ns ou REJ_ns
+    // Recebeu RR ou REJ esperados (se enviou I0 recebeu RR_1 ou REJ_0 | se enviou I1 recebeu RR_0 ou REJ_1)
     if ((receivedControl = receiveSupervisionFrame(fd, TRANSFER, TRANSMITTER)) != -1){
 
-      if(receivedControl >> 7 == !dataLink->sequenceNumber){  // Recebeu o numero de serie esperado (RR_!ns)
+      if(receivedControl >> 7 == !dataLink->sequenceNumber){  // Eviou I0 e recebeu RR_1 | Enviou I1 e recebeu RR_0
         resend = FALSE; 
-        alarm(0);
+        alarm(0); // Desativa alarme
 
         dataLink->sequenceNumber = !dataLink->sequenceNumber; // Altera numero de serie para a proxima trama
         break;
       }
+      else{ // enviou I0 e recebeu REJ_0 | enviou I1 e recebeu REJ_1
+        resend = FALSE; 
+        alarm(0); // Desativa alarme
+      }
 
     } 
 
+    // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
 
   return (numWritten - DELIMIT_INFO_SIZE); // length of the data packet length sent to the receiver
