@@ -94,7 +94,7 @@ int openReceiver(int fd) {
 
 
 int openTransmitter(int fd) {
-
+  
   signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
 
   /* (Re)transmissao da trama SET */
@@ -119,7 +119,7 @@ int openTransmitter(int fd) {
 
 // Receção e envio de tramas de supervisão
 
-unsigned char receiveSupervisionFrame(int fd, Period period, Status status) {
+int receiveSupervisionFrame(int fd, Period period, Status status) {
 
   State state = START;
   unsigned char ch, bcc = 0;
@@ -262,11 +262,11 @@ int llread(int fd, unsigned char* buffer){
   int expectedSequenceNumber;
   int receivedSequenceNumber = (dataLink->frame[CONTROL_BYTE] >> 6) & 0x01;
   if(receivedSequenceNumber == dataLink->sequenceNumber)
-    expectedSequenceNumber = TRUE;
+     expectedSequenceNumber = TRUE;
   else
     expectedSequenceNumber = FALSE;
   
-
+  
   Control ack = buildAck(validDataField, expectedSequenceNumber);
 
   if(sendSupervisionFrame(fd, ack) == -1 ){
@@ -283,7 +283,7 @@ int llread(int fd, unsigned char* buffer){
 
 
 int receiveInfoFrame(int fd) {
- 
+
   State iState = START;
   unsigned char ch, bcc1 = 0;
   int nr, i = 0; 
@@ -389,13 +389,13 @@ int receiveInfoFrame(int fd) {
 Control buildAck(int validDataField, int expectedSequenceNumber){
 
   if(validDataField == TRUE){ // Tramas sem erros nos dados
-
     if(expectedSequenceNumber == TRUE) // Nova Trama
-      dataLink->sequenceNumber = !dataLink->sequenceNumber; // Passa a pedir o outro Numero de Sequencia
-      
+      dataLink->sequenceNumber = !dataLink->sequenceNumber; // Passa a pedir o outro Numero de Sequencia  
+     
     if(dataLink->sequenceNumber == 0)
       return C_RR_0;
-    return C_RR_1;
+    else
+      return C_RR_1;
   }
 
   // Tramas com erros nos dados
@@ -405,7 +405,10 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
     return C_REJ_1;
   }
 
-  return C_RR_0;  // Trama repetida com erros nos dados
+  // Trama repetida com erros nos dados
+  if(dataLink->sequenceNumber == 0)
+    return C_RR_0;
+  return C_RR_1;
 
 }
 
@@ -436,7 +439,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   length=lengthst;
 
   int numWritten;
-  unsigned receivedControl;
+  int receivedControl;
 
   printf("Sent I frame\n");
 
@@ -457,7 +460,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
       if(receivedControl >> 7 == !dataLink->sequenceNumber){  // Eviou I0 e recebeu RR_1 | Enviou I1 e recebeu RR_0
         resend = FALSE; 
         alarm(0); // Desativa alarme
-
+        
         dataLink->sequenceNumber = !dataLink->sequenceNumber; // Altera numero de serie para a proxima trama
         break;
       }

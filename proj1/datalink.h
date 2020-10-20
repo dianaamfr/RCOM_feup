@@ -59,7 +59,7 @@ int initDataLink(int port);
  * @param status interviniente que recebe a frame
  * @return campo de controlo em caso de sucesso e -1 em caso de falha
 */
-unsigned char receiveSupervisionFrame(int fd, Period period, Status status);
+int receiveSupervisionFrame(int fd, Period period, Status status);
 
 /**
  * Verifica se o Campo de Controlo é o esperado pelo interviniente da ligação de dados que espera a trama dependendo da fase do protocolo
