@@ -10,13 +10,19 @@
 #define TIMEOUT           3   
 #define MAX_RETR          3   
 
+// APPLICATION LAYER
+#define DATA_SIZE              255
+#define DATA_PACKET_HEADER     4
+#define DATA_PACKET_SIZE       DATA_SIZE + DATA_PACKET_HEADER
+
+// DATA LINK LAYER
+
 #define HEADER_SIZE        4
 #define DELIMIT_INFO_SIZE  6
-#define MAX_DATA_FIELD     1024
-#define MAX_INFO_FRAME     MAX_DATA_FIELD + DELIMIT_INFO_SIZE
-#define MAX_PACKET_SIZE    MAX_DATA_FIELD + HEADER_SIZE
-
 #define CONTROL_BYTE      2
+
+#define MAX_DATA_FRAME     DATA_PACKET_SIZE + DELIMIT_INFO_SIZE
+#define MAX_INFO_FRAME     ((MAX_DATA_FRAME + 1) * 2) + HEADER_SIZE + 1
 
 
 /* DATA LINK */

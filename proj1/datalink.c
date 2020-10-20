@@ -356,8 +356,10 @@ int receiveInfoFrame(int fd) {
         break;
 
       case BCC_OK:
-        dataLink->frame[i] = ch;
-        i++;
+        if(nr > 0){
+          dataLink->frame[i] = ch;
+          i++;
+        }
         if(ch == FLAG){
           iState = STOP;
         }
@@ -418,7 +420,6 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 int llwrite(int fd, unsigned char* buffer, int length) {
 
   Control controlByte;
-  //unsigned char answer_buffer[MAX_DATA_FIELD];
 
   if(dataLink->sequenceNumber == 0)
     controlByte = C_N0;
