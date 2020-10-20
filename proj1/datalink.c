@@ -369,7 +369,8 @@ int receiveInfoFrame(int fd) {
     
     }
   }
-  if(i==MAX_INFO_FRAME){
+
+  if(i == MAX_INFO_FRAME && end == FALSE){ // A frame 
     printf("max I frame size exceeded");
     return -1;
   }
@@ -425,6 +426,14 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     //close
     return -1;
   }
+
+  //stuffing
+  int lengthst; //length after stuffing
+  if((lengthst = byte_stuffing(length)) < 0){
+    //close()
+    return -1;
+  }
+  length=lengthst;
 
   int numWritten;
   unsigned receivedControl;
@@ -501,40 +510,33 @@ int sendFrameI(int fd, int length) {
 
 
 // Byte Stuffing e Destuffing
-// TODO
+
 int byte_stuffing(int length) {
 
-  /*int num = 0; //number of packet bytes
-
-  unsigned char *aux = malloc(sizeof(unsigned char) * (length + 6));  // buffer aux
+  int frameSize = length + DELIMIT_INFO_SIZE;
+  unsigned char *aux = malloc(sizeof(unsigned char) * frameSize);  // buffer aux
   if(aux == NULL){
     return -1;
   }
-
-  *dataLink->frame = realloc(dataLink->frame ,sizeof(unsigned char ) * ((length + 1) * 2) + 5); // max space
-  if (&dataLink->frame == NULL){
-    free(aux);
-    return -1;
-  }
-
-  for(int i = 0; i < length + 6 ; i++){
+  
+  for(int i = 0; i < frameSize ; i++){ // Copy frame to aux
     aux[i] = dataLink->frame[i];
   }
 
-  int j = 4; //where data starts
+  int j = HEADER_SIZE;
+  int terminatingFlagIdx = length + 5;
 
-  for(int i = 4; i < (length + 6); i++){ //fills frame buffer
-    if(aux[i] == FLAG && i != (length + 5)) {
+  for(int i = HEADER_SIZE; i < frameSize; i++){ //fills frame buffer
+
+    if(aux[i] == FLAG && i != terminatingFlagIdx) { 
       dataLink->frame[j] = ESC;
       dataLink->frame[j+1] = STUFFING_FLAG;
-      j = j + 2;
-      num++;
+      j += 2;
     }
-    else if(aux[i] == ESC && i != (length + 5)) {
+    else if(aux[i] == ESC && i != terminatingFlagIdx) { // NAO ENTENDI AQUI ESTA PARTE: && i != (length + 5)
       dataLink->frame[j] = ESC;
       dataLink->frame[j+1] = STUFFING_ESC;
       j = j + 2;
-      num++;
     }
     else{
       dataLink->frame[j] = aux[i];
@@ -542,17 +544,19 @@ int byte_stuffing(int length) {
     }
   }
 
-  *dataLink->frame = realloc(dataLink->frame, sizeof(unsigned char) * (length + 6 + num)); //ocupar so espaço usado
+  printf("Stuffing complete: \n");
+  for(int i = 0; i < j; i++){
+    printf("%4X",dataLink->frame[i]);
+  }
+  printf("\n");
+
+ 
   if(&dataLink->frame == NULL){
     free(aux);
     return -1;
   }
-
   free(aux);
-
-  return j;*/
-
-  return 0;
+  return j;
 }
 
 
