@@ -469,27 +469,19 @@ int sendFrameI(int fd, int length) {
 }
 
 
-/*int byte_stuffing( int length) {
 
+int byte_stuffing( int length) {
   int num = 0; //number of packet bytes
-
   unsigned char *aux = malloc(sizeof(unsigned char) * (length + 6));  // buffer aux
   if(aux == NULL){
     return -1;
   }
-
-  *dataLink->frame = realloc(dataLink->frame ,sizeof(unsigned char ) * ((length + 1) * 2) + 5); // max space
-  if (&dataLink->frame == NULL){
-    free(aux);
-    return -1;
-  }
-
+  
   for(int i = 0; i < length + 6 ; i++){
     aux[i] = dataLink->frame[i];
   }
 
-  int j = 4; //where data starts
-
+  int j=4;
   for(int i = 4; i < (length + 6); i++){ //fills frame buffer
     if(aux[i] == FLAG && i != (length + 5)) {
       dataLink->frame[j] = ESC;
@@ -509,16 +501,21 @@ int sendFrameI(int fd, int length) {
     }
   }
 
-  *dataLink->frame = realloc(dataLink->frame, sizeof(unsigned char) * (length + 6 + num)); //ocupar so espaço usado
+  printf("Stuffing complete: \n");
+  for(int i = 0; i < length; i++){
+    printf("%4X",dataLink->frame[i]);
+  }
+  printf("\n");
+
+ 
   if(&dataLink->frame == NULL){
     free(aux);
     return -1;
   }
-
   free(aux);
-
   return j;
-}*/
+
+}
 
 
 int llwrite(int fd, unsigned char* buffer, int length) {
@@ -536,6 +533,15 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     //close
     return -1;
   }
+
+   //stuffing
+  int lengthst; //length after stuffing
+  if((lengthst = byte_stuffing(length)) < 0){
+    free(dataLink->frame);
+    //close()
+    return -1;
+  }
+  length=lengthst;
 
   int numWritten;
 
