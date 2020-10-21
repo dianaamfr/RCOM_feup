@@ -19,9 +19,12 @@ int llopen(char * port, Status status){
   fd = openNonCanonical(dataLink->port,&oldtio);
   if(fd == -1){
     restoreConfiguration(fd, &oldtio);
+    free(dataLink);
     return -1;
   } 
 
+  signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
+  
   tries = 0;     
   resend = FALSE; 
 
@@ -30,6 +33,7 @@ int llopen(char * port, Status status){
     case RECEIVER:
       if(openReceiver(fd) == -1){
         restoreConfiguration(fd, &oldtio);
+        free(dataLink);
         return -1;
       }
       break;
@@ -37,6 +41,7 @@ int llopen(char * port, Status status){
     case TRANSMITTER:
       if(openTransmitter(fd) == -1){
         restoreConfiguration(fd, &oldtio);
+        free(dataLink);
         return -1;
       }
       break;
@@ -44,6 +49,7 @@ int llopen(char * port, Status status){
     default:
       perror("Invalid Status: nor RECEIVER nor TRANSMITTER");
       restoreConfiguration(fd, &oldtio);
+      free(dataLink);
       return -1;
   }
 
@@ -74,13 +80,13 @@ int initDataLink(char * port) {
 
 int openReceiver(int fd) {
 
-  if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { /* Espera por trama SET*/
+  if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { // Espera por trama SET 
     perror("Error receiving SET frame");
     return -1;
   }
 
   resend = FALSE;
-  if(sendSupervisionFrame(fd, C_UA) == -1) { /* Envia UA para a porta de serie */
+  if(sendSupervisionFrame(fd, C_UA, RECEIVER) == -1) { // Envia UA para a porta de serie
     perror("Error sending UA frame");
     return -1;
   }
@@ -91,15 +97,13 @@ int openReceiver(int fd) {
 
 int openTransmitter(int fd) {
   
-  signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
-
-  /* (Re)transmissao da trama SET */
+  // (Re)transmissao da trama SET
   while(tries < dataLink->numTransmissions){
     
-    sendSupervisionFrame(fd, C_SET);
+    sendSupervisionFrame(fd, C_SET, TRANSMITTER);
 
     resend = FALSE; 
-    alarm(dataLink->timeout); /* Inicia espera por UA */
+    alarm(dataLink->timeout); // Inicia espera por UA 
 
     if (receiveSupervisionFrame(fd, SETUP, TRANSMITTER) != -1){
       resend = FALSE; 
@@ -141,7 +145,7 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
         break;
 
       case FLAG_RCV:
-        if (ch == A){
+        if (ch == expectedAddress(period,status)){
           state = A_RCV;
           bcc = createBCC(bcc,ch);
         }
@@ -176,7 +180,7 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
         break;
 
       case STOP:
-        printf("\nReceived %s message with success\n", getControlName(control));
+        printf("\nReceived %s message \n", getControlName(control));
         return control;
     }
   }
@@ -186,31 +190,41 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
 }
 
 
+Control expectedAddress(Period period, Status status){
+  if((period == DISCONNECT && status == TRANSMITTER) || (period == END && status == RECEIVER))
+    return A_END;
+  return A;
+}
+
+
 int expectedControl(Period period, Status status, unsigned char ch) {
   int result = FALSE;
 
   switch (status)
   {
     case RECEIVER:
-      if(period == SETUP && ch == C_SET) // Na Fase de Estabelecimento da ligação o Recetor espera a trama SET
+      if((period == SETUP && ch == C_SET)|| // Estabelecimento => Recetor espera SET
+        (period == DISCONNECT && ch == C_DISC)|| // Terminação => Recetor espera DISC
+        (period == END && ch == C_UA))  // Terminação(acknowlegment) => Recetor espera UA
         result = TRUE;
+
       break;
 
     case TRANSMITTER: 
-      if(period == SETUP && ch == C_UA) // Na Fase de Estabelecimento da ligação o Transmissor espera a trama UA
+      if((period == SETUP && ch == C_UA)|| // Estabelecimento => Transmissor espera UA
+        (period == DISCONNECT && ch == C_DISC)) // Terminação => Recetor espera DISC
         result = TRUE;
 
-      else if(period == TRANSFER){  // Na Fase de Transferencia de dados o Transmissor espera as tramas RR ou REJ
-        if((ch == C_RR_1 || ch == C_REJ_0) && dataLink->sequenceNumber == 0) // Se ns = 0, espera RR_1 ou REJ_0
-          result = TRUE;
-       
-        else if((ch == C_RR_0 || ch == C_REJ_1) && dataLink->sequenceNumber == 1)  // Se ns = 1, espera RR_0 ou REJ_1
+      else if(period == TRANSFER){  // Transferencia => Transmissor espera RR ou REJ
+        if(((ch == C_RR_1 || ch == C_REJ_0) && dataLink->sequenceNumber == 0)|| // Se ns = 0, espera RR_1 ou REJ_0
+          ((ch == C_RR_0 || ch == C_REJ_1) && dataLink->sequenceNumber == 1))  // Se ns = 1, espera RR_0 ou REJ_1
           result = TRUE;
       }
+
       break;
 
     default:
-      printf("Invalid Status in Expected Control \n");
+      perror("Invalid Status");
       break;
   }
 
@@ -218,12 +232,17 @@ int expectedControl(Period period, Status status, unsigned char ch) {
 }
 
 
-int sendSupervisionFrame(int fd, Control control) {
+int sendSupervisionFrame(int fd, Control control, Status status) {
   unsigned char buf[5];
   int nw;
   
   buf[0] = FLAG;
-  buf[1] = A;
+
+  if((control == C_DISC && status == RECEIVER) || (control == C_UA && status == TRANSMITTER))
+    buf[1] = A_END;
+  else
+    buf[1] = A;
+
   buf[2] = control;
   buf[3] = buf[1] ^ buf[2];
   buf[4] = FLAG;
@@ -236,7 +255,7 @@ int sendSupervisionFrame(int fd, Control control) {
     return -1;
   }
 
-  printf("Sent %s message with success\n", getControlName(control));
+  printf("Sent %s message\n", getControlName(control));
 
   return 0;
 
@@ -246,12 +265,14 @@ int sendSupervisionFrame(int fd, Control control) {
 // Tranferencia de Dados - leitura da porta de serie
 
 int llread(int fd, unsigned char* buffer){
-
+  printf("\nllread\n\n");
   int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
   int validDataField = TRUE;
   
   if(dataFieldSize == -1) 
     validDataField = FALSE;
+  else if(dataFieldSize == 0 && dataLink->frame[CONTROL_BYTE] == C_DISC)
+    return 0;
 
 
   // Verificar se o ns recebido é o que se pretende
@@ -263,7 +284,7 @@ int llread(int fd, unsigned char* buffer){
 
   Control ack = buildAck(validDataField, expectedSequenceNumber);
 
-  if(sendSupervisionFrame(fd, ack) == -1 ){
+  if(sendSupervisionFrame(fd, ack, RECEIVER) == -1 ){
     fprintf(stderr,"Error sending %s\n", getControlName(ack));
     return -1;
   }
@@ -360,7 +381,7 @@ int receiveInfoFrame(int fd) {
         break;
 
       case STOP:
-        printf("\nReceived Information Frame with success\n");
+        printf("\nReceived Information Frame\n");
         end = TRUE;
     
     }
@@ -371,6 +392,9 @@ int receiveInfoFrame(int fd) {
     // TODO handle errors
     return -1;
   }
+
+  if(ch == C_DISC)
+    return 0;
   
   i = byteDestuffing(i);
 
@@ -413,7 +437,7 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 // Tranferencia de Dados - escrita na porta de serie
 
 int llwrite(int fd, unsigned char* buffer, int length) {
-
+  printf("\nllwrite\n\n");
   Control controlByte;
 
   if(dataLink->sequenceNumber == 0)
@@ -451,7 +475,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     }
 
     resend = FALSE; 
-    alarm(dataLink->timeout); /* Inicia espera por RR ou REJ */
+    alarm(dataLink->timeout); // Inicia espera por RR ou REJ 
 
     // Recebeu RR ou REJ esperados (se enviou I0 recebeu RR_1 ou REJ_0 | se enviou I1 recebeu RR_0 ou REJ_1)
     if ((receivedControl = receiveSupervisionFrame(fd, TRANSFER, TRANSMITTER)) != -1){
@@ -504,6 +528,7 @@ int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLe
 
 
 int sendFrameI(int fd, int length) {
+    tcflush(fd, TCIOFLUSH);
 
     int n;
     if((n = write(fd, dataLink->frame, length)) <= 0){
@@ -578,10 +603,90 @@ int byteDestuffing(int length){
   return length;
 }
 
-// TODO - enviar DISC / receber DISC
-int llclose(int fd){
+
+// Terminacao da ligacao de dados
+
+int llclose(int fd,  Status status){
+  printf("\nllclose\n\n");
+  tries = 0;     
+  resend = FALSE; 
+
+  switch (status)
+  {
+    case RECEIVER:
+      if(closeReceiver(fd) == -1){
+        restoreConfiguration(fd, &oldtio);
+        free(dataLink);
+        return -1;
+      }
+      break;
+    
+    case TRANSMITTER:
+      if(closeTransmitter(fd) == -1){
+        restoreConfiguration(fd, &oldtio);
+        free(dataLink);
+        return -1;
+      }
+      break;
+      
+    default:
+      perror("Invalid Status: nor RECEIVER nor TRANSMITTER");
+      restoreConfiguration(fd, &oldtio);
+      free(dataLink);
+      return -1;
+  }
+
+
   restoreConfiguration(fd,&oldtio);
   free(dataLink);
+
+  return 0;
+}
+
+int closeReceiver(int fd){
+
+  // Recebe da trama DISC
+  receiveSupervisionFrame(fd, DISCONNECT, RECEIVER);
+  
+  // (Re)transmissao da trama DISC 
+  while(tries < dataLink->numTransmissions){
+    
+    sendSupervisionFrame(fd, C_DISC, RECEIVER);
+
+    resend = FALSE; 
+    alarm(dataLink->timeout); // Inicia espera por UA
+
+    if (receiveSupervisionFrame(fd, END, RECEIVER) != -1){ 
+      resend = FALSE; 
+      alarm(0);
+      return 0;
+    } 
+
+  }
+
+  return 0;
+
+}
+
+int closeTransmitter(int fd){
+
+  // (Re)transmissao da trama DISC
+  while(tries < dataLink->numTransmissions){
+    
+    sendSupervisionFrame(fd, C_DISC, TRANSMITTER);
+
+    resend = FALSE; 
+    alarm(dataLink->timeout); // Inicia espera por DISC
+
+    if (receiveSupervisionFrame(fd, DISCONNECT, TRANSMITTER) != -1){
+      resend = FALSE; 
+      alarm(0);
+      break;
+    } 
+
+  }
+
+  sendSupervisionFrame(fd, C_UA, TRANSMITTER);
 
   return 0;
 }

@@ -20,11 +20,11 @@ int main(int argc, char** argv) {
   
   // A partir daqui será feito na app provavelmente
   if((fd = llopen(argv[1], RECEIVER)) < 0){
-    perror("llopen Receiver");
+    perror("Couldn't connect with Transmitter");
     return -1;
   }
 
-  /* Usado para testar a receção da trama de info pelo recetor e envio de RR*/
+  // Usado para testar a receção da trama de info pelo recetor e envio de RR
   unsigned char buf[20];
   unsigned char buf1[20];
   int nr = llread(fd, buf);
@@ -33,6 +33,8 @@ int main(int argc, char** argv) {
   for(int i = 0; i < nr; i++){
     printf("%4X",buf[i]);
   }
+
+  printf("\n");
 
   nr = llread(fd, buf1);
 
@@ -43,7 +45,7 @@ int main(int argc, char** argv) {
 
   printf("\n");
 
-  llclose(fd);
+  llclose(fd, RECEIVER);
 
   return 0;
 }

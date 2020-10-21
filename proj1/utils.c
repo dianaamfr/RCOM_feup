@@ -111,7 +111,12 @@ char* getControlName(Control control) {
         str ="I_1";
         break;
     
+    case C_DISC:
+        str="C_DISC";
+        break;
+
     default:
+        perror("WRONG control field");
         break;
     }
 

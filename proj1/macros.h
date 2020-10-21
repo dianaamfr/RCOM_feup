@@ -31,7 +31,8 @@ typedef enum Status {
     RECEIVER, TRANSMITTER
 } Status;
 
-#define A               0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor */
+#define A               0x03         /* Campo de Endereço em Respostas enviadas pelo Receptor e Comandos enviados pelo Emissor */
+#define A_END           0x01         /* Campo de Endereço em Respostas enviadas pelo Emissor e Comandos enviados pelo Recetor */
 #define FLAG            0x7E         /* Flag que delimita as tramas */
 #define STUFFING_FLAG   0x5E
 #define STUFFING_ESC    0x5D
@@ -52,11 +53,15 @@ typedef enum Control {
     C_REJ_0 = 0x01,
     C_REJ_1 = 0x81,
     C_N0 = 0x00,
-    C_N1 = 0x40
+    C_N1 = 0x40,
+    C_DISC = 0x0B
 } Control;
 
 typedef enum Period {
-    SETUP, TRANSFER, END
+    SETUP,              /* Estabelecimento da ligação de dados (SET, UA) */
+    TRANSFER,           /* Transferência de dados (I, RR, REJ)*/
+    DISCONNECT,         /* Terminação (DISC, UA)*/
+    END                 /* Estabelecimento da ligação de dados (UA)*/
 } Period;
 
 #endif
