@@ -10,10 +10,9 @@
 
 // Estabelecimento da ligação de dados
 
-int llopen(int port, Status status){
+int llopen(char * port, Status status){
 
   int fd;
-
 
   initDataLink(port);
 
@@ -52,7 +51,7 @@ int llopen(int port, Status status){
 }
 
 
-int initDataLink(int port) {
+int initDataLink(char * port) {
 
 	dataLink = (linkLayer*) malloc(sizeof(linkLayer));
   if(dataLink == NULL){
@@ -60,10 +59,7 @@ int initDataLink(int port) {
     return -1;
   }
 
-	if( sprintf(dataLink->port, "/dev/ttyS%d", port) < 0 ){
-    perror("Sprintf: copying port name error");
-    return -1;
-  }
+  strcpy(dataLink->port, port);
 
 	dataLink->baudRate = BAUDRATE;
 	dataLink->sequenceNumber = 0; // Começar com número de sequência 0

@@ -12,7 +12,7 @@
 
 int main(int argc, char** argv) {
 
-  int port, fd;
+  int fd;
 
   // Pode ser lido apenas o número da porta?
   if(validateArgs(argc, argv) == -1) {
@@ -20,10 +20,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  port = atoi(&argv[1][9]);
-  
   // A partir daqui será feito na app provavelmente
-  if((fd = llopen(port, TRANSMITTER)) < 0){
+  if((fd = llopen(argv[1], TRANSMITTER)) < 0){
     perror("llopen Transmitter");
     return -1;
   }

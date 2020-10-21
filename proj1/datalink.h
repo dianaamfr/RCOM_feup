@@ -23,7 +23,7 @@ struct termios oldtio;
  * @param status TRANSMITTER / RECEIVER
  * @return identificador da ligacao de dados ou -1 em caso de erro
 */
-int llopen(int port, Status status);
+int llopen(char * port, Status status);
 
 
 /**
@@ -47,7 +47,7 @@ int openTransmitter(int fd);
  * @param port nome da porta de série
  * @return 0 em caso de sucesso e -1 em caso de falha
 */
-int initDataLink(int port);
+int initDataLink(char * port);
 
 
 // Receção e envio de tramas de supervisão
