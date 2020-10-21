@@ -32,20 +32,15 @@ int main(int argc, char** argv) {
   printf("Send Info Frame\n");
 
   unsigned char buffer[20];
-  buffer[0] = 0x17;
-  buffer[1] = 0x30;
-  buffer[2] = 0x16;
-  buffer[3] = 0x93;
-  buffer[4] = 0x50;
-  buffer[5] = 0x77;
+  buffer[0] = ESC;
 
 
-  if(llwrite(fd, buffer, 6) < 0) {
+  if(llwrite(fd, buffer, 1) < 0) {
     printf("deu erro");
     return -1;
   }
 
-  if(llwrite(fd, buffer, 6) < 0) {
+  if(llwrite(fd, buffer, 1) < 0) {
     printf("deu erro");
     return -1;
   }

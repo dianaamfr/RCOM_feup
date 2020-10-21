@@ -135,8 +135,8 @@ int sendFrameI(int fd, int length);
 
 // Byte Stuffing e Destuffing
 
-// TODO
-int byte_stuffing( int length);
+
+int byteStuffing(int infoFieldLength);
 
 
 /**

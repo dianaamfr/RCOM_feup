@@ -259,14 +259,12 @@ int llread(int fd, unsigned char* buffer){
 
 
   // Verificar se o ns recebido é o que se pretende
-  int expectedSequenceNumber;
+  int expectedSequenceNumber = FALSE;
   int receivedSequenceNumber = (dataLink->frame[CONTROL_BYTE] >> 6) & 0x01;
   if(receivedSequenceNumber == dataLink->sequenceNumber)
-     expectedSequenceNumber = TRUE;
-  else
-    expectedSequenceNumber = FALSE;
+    expectedSequenceNumber = TRUE;
   
-  
+
   Control ack = buildAck(validDataField, expectedSequenceNumber);
 
   if(sendSupervisionFrame(fd, ack) == -1 ){
@@ -274,7 +272,7 @@ int llread(int fd, unsigned char* buffer){
     return -1;
   }
 
-  if(validDataField == TRUE)
+  if(validDataField == TRUE && expectedSequenceNumber == TRUE)
     memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);
 
   return dataFieldSize;
@@ -304,7 +302,7 @@ int receiveInfoFrame(int fd) {
         if (ch == FLAG){
           bcc1 = 0;
           i = 0;
-          memset(dataLink->frame, 0, sizeof(dataLink->frame)); 
+          memset(dataLink->frame, 0, MAX_INFO_FRAME); 
 
           iState = FLAG_RCV;
           dataLink->frame[i] = ch;
@@ -372,8 +370,9 @@ int receiveInfoFrame(int fd) {
     }
   }
 
-  if(i == MAX_INFO_FRAME && end == FALSE){ // A frame 
+  if(i == MAX_INFO_FRAME && end == FALSE){
     printf("max I frame size exceeded");
+    // TODO handle errors
     return -1;
   }
   
@@ -427,17 +426,19 @@ int llwrite(int fd, unsigned char* buffer, int length) {
 
 
   if (createFrameI(controlByte, buffer, length) != 0) {
-    //close
+    restoreConfiguration(fd, &oldtio);
+    free(dataLink);
     return -1;
   }
 
   //stuffing
   int lengthst; //length after stuffing
-  if((lengthst = byte_stuffing(length)) < 0){
-    //close()
+  if((lengthst = byteStuffing(length)) < 0){
+    restoreConfiguration(fd, &oldtio);
+    free(dataLink);
     return -1;
   }
-  length=lengthst;
+  length = lengthst;
 
   int numWritten;
   int receivedControl;
@@ -448,7 +449,8 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   while(tries < dataLink->numTransmissions){
     
     if((numWritten = sendFrameI(fd, length + DELIMIT_INFO_SIZE)) == -1) {
-      //close();
+      restoreConfiguration(fd, &oldtio);
+      free(dataLink);
       return -1;
     }
 
@@ -481,6 +483,8 @@ int llwrite(int fd, unsigned char* buffer, int length) {
 
 int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLength) {
 
+  memset(dataLink->frame, 0, MAX_INFO_FRAME);
+  
   dataLink->frame[0] = FLAG;
 
   dataLink->frame[1] = A; 
@@ -507,7 +511,7 @@ int sendFrameI(int fd, int length) {
 
     int n;
     if((n = write(fd, dataLink->frame, length)) <= 0){
-        return -1;
+      return -1;
     }
     return n;
 }
@@ -515,9 +519,9 @@ int sendFrameI(int fd, int length) {
 
 // Byte Stuffing e Destuffing
 
-int byte_stuffing(int length) {
+int byteStuffing(int infoFieldLength) {
 
-  int frameSize = length + DELIMIT_INFO_SIZE;
+  int frameSize = infoFieldLength + DELIMIT_INFO_SIZE;
   unsigned char *aux = malloc(sizeof(unsigned char) * frameSize);  // buffer aux
   if(aux == NULL){
     return -1;
@@ -527,48 +531,42 @@ int byte_stuffing(int length) {
     aux[i] = dataLink->frame[i];
   }
 
-  int j = HEADER_SIZE;
-  int terminatingFlagIdx = length + 5;
+  int frameIdx = HEADER_SIZE; // Starts with 1st data Idx
+  int lastFlagIdx = frameSize - 1;
 
-  for(int i = HEADER_SIZE; i < frameSize; i++){ //fills frame buffer
+  for(int auxIdx = HEADER_SIZE; auxIdx < frameSize; auxIdx++){ //fills frame buffer
 
-    if(aux[i] == FLAG && i != terminatingFlagIdx) { 
-      dataLink->frame[j] = ESC;
-      dataLink->frame[j+1] = STUFFING_FLAG;
-      j += 2;
+    if(aux[auxIdx] == FLAG && auxIdx != lastFlagIdx) { 
+      dataLink->frame[frameIdx] = ESC;
+      dataLink->frame[frameIdx + 1] = STUFFING_FLAG;
+      frameIdx += 2;
     }
-    else if(aux[i] == ESC && i != terminatingFlagIdx) { // NAO ENTENDI AQUI ESTA PARTE: && i != (length + 5)
-      dataLink->frame[j] = ESC;
-      dataLink->frame[j+1] = STUFFING_ESC;
-      j = j + 2;
+    else if(aux[auxIdx] == ESC) {
+      dataLink->frame[frameIdx] = ESC;
+      dataLink->frame[frameIdx + 1] = STUFFING_ESC;
+      frameIdx += 2;
     }
     else{
-      dataLink->frame[j] = aux[i];
-      j++;
+      dataLink->frame[frameIdx] = aux[auxIdx];
+      frameIdx++;
     }
   }
 
   printf("Stuffing complete: \n");
-  for(int i = 0; i < j; i++){
+  for(int i = 0; i < frameIdx; i++){
     printf("%4X",dataLink->frame[i]);
   }
   printf("\n");
 
- 
-  if(&dataLink->frame == NULL){
-    free(aux);
-    return -1;
-  }
   free(aux);
-  return j;
+  return frameIdx;
 }
 
 
 int byteDestuffing(int length){
  
-  for(int i=0; i< length; i++){
+  for(int i = HEADER_SIZE; i < length; i++){
     if(dataLink->frame[i] == ESC){
-      printf("Found escape in i = %d\n", i);
       memmove(&dataLink->frame[i], &dataLink->frame[i+1], length-i-1);
       dataLink->frame[i] ^= STUFF_OCT;
       length--;
