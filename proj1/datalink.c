@@ -14,7 +14,9 @@ int llopen(char * port, Status status){
 
   int fd;
 
-  initDataLink(port);
+  if(initDataLink(port) == -1){
+    return -1;
+  }
 
   fd = openNonCanonical(dataLink->port,&oldtio);
   if(fd == -1){
@@ -68,7 +70,7 @@ int initDataLink(char * port) {
   strcpy(dataLink->port, port);
 
 	dataLink->baudRate = BAUDRATE;
-	dataLink->sequenceNumber = 0; // Começar com número de sequência 0
+	dataLink->sequenceNumber = 0; // Nr sequencia esperado pelo recetor e a enviar pelo emissor
 
   dataLink->timeout = TIMEOUT;
   dataLink->numTransmissions = MAX_RETR;
@@ -100,7 +102,10 @@ int openTransmitter(int fd) {
   // (Re)transmissao da trama SET
   while(tries < dataLink->numTransmissions){
     
-    sendSupervisionFrame(fd, C_SET, TRANSMITTER);
+     if(sendSupervisionFrame(fd, C_SET, TRANSMITTER)== -1){ // Envia SET para a porta de serie
+        perror("Error sending SET frame");
+        return -1;
+     }
 
     resend = FALSE; 
     alarm(dataLink->timeout); // Inicia espera por UA 
@@ -109,8 +114,8 @@ int openTransmitter(int fd) {
       resend = FALSE; 
       alarm(0);
       return 0;
-    } 
-
+    }
+    // Tenta novamente no caso de falhar a receção de UA
   }
 
   return -1;
@@ -266,6 +271,7 @@ int sendSupervisionFrame(int fd, Control control, Status status) {
 
 int llread(int fd, unsigned char* buffer){
   printf("\nllread\n\n");
+
   int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
   int validDataField = TRUE;
   
@@ -286,6 +292,8 @@ int llread(int fd, unsigned char* buffer){
 
   if(sendSupervisionFrame(fd, ack, RECEIVER) == -1 ){
     fprintf(stderr,"Error sending %s\n", getControlName(ack));
+    restoreConfiguration(fd,&oldtio);
+    free(dataLink);
     return -1;
   }
 
@@ -293,7 +301,6 @@ int llread(int fd, unsigned char* buffer){
     memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);
 
   return dataFieldSize;
-
 }
 
 
@@ -389,7 +396,6 @@ int receiveInfoFrame(int fd) {
 
   if(i == MAX_INFO_FRAME && end == FALSE){
     printf("max I frame size exceeded");
-    // TODO handle errors
     return -1;
   }
 
@@ -438,6 +444,7 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 
 int llwrite(int fd, unsigned char* buffer, int length) {
   printf("\nllwrite\n\n");
+  
   Control controlByte;
 
   if(dataLink->sequenceNumber == 0)
@@ -452,13 +459,12 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   }
 
   //stuffing
-  int lengthst; //length after stuffing
-  if((lengthst = byteStuffing(length)) < 0){
+  int frameSize; //length after stuffing
+  if((frameSize = byteStuffing(length)) < 0){
     restoreConfiguration(fd, &oldtio);
     free(dataLink);
     return -1;
   }
-  length = lengthst;
 
   int numWritten;
   int receivedControl;
@@ -468,7 +474,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   // Mecanismo de retransmissão da trama I
   while(tries < dataLink->numTransmissions){
     
-    if((numWritten = sendFrameI(fd, length + DELIMIT_INFO_SIZE)) == -1) {
+    if((numWritten = sendFrameI(fd, frameSize)) == -1) {
       restoreConfiguration(fd, &oldtio);
       free(dataLink);
       return -1;
@@ -643,37 +649,45 @@ int llclose(int fd,  Status status){
   return 0;
 }
 
-int closeReceiver(int fd){
 
+int closeReceiver(int fd){
+    
   // Recebe da trama DISC
   receiveSupervisionFrame(fd, DISCONNECT, RECEIVER);
   
   // (Re)transmissao da trama DISC 
   while(tries < dataLink->numTransmissions){
     
-    sendSupervisionFrame(fd, C_DISC, RECEIVER);
+    if(sendSupervisionFrame(fd, C_DISC, RECEIVER) == -1){ // Envia DISC
+      perror("Error sending DISC");
+      return -1;
+    }
 
     resend = FALSE; 
     alarm(dataLink->timeout); // Inicia espera por UA
 
-    if (receiveSupervisionFrame(fd, END, RECEIVER) != -1){ 
+    if (receiveSupervisionFrame(fd, END, RECEIVER) != -1){ // Espera UA
       resend = FALSE; 
       alarm(0);
       return 0;
     } 
-
+    // Se não receber UA volta a enviar DISC - retransmissão
   }
 
   return 0;
 
 }
 
+
 int closeTransmitter(int fd){
 
   // (Re)transmissao da trama DISC
   while(tries < dataLink->numTransmissions){
     
-    sendSupervisionFrame(fd, C_DISC, TRANSMITTER);
+    if(sendSupervisionFrame(fd, C_DISC, TRANSMITTER) == -1){
+      perror("Error sending DISC");
+      return -1;
+    }
 
     resend = FALSE; 
     alarm(dataLink->timeout); // Inicia espera por DISC
@@ -683,10 +697,13 @@ int closeTransmitter(int fd){
       alarm(0);
       break;
     } 
-
+    // Se não receber DISC volta a enviar DISC - retransmissão
   }
 
-  sendSupervisionFrame(fd, C_UA, TRANSMITTER);
+  if(sendSupervisionFrame(fd, C_UA, TRANSMITTER) == -1){
+    perror("Error sending UA");
+    return -1;
+  }
 
   return 0;
 }

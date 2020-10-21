@@ -4,18 +4,18 @@
 #include "macros.h"
 
 typedef struct linkLayer {
-    char port[20];                  /*Dispositivo /dev/ttySx, x = 0, 1*/
-    int baudRate;                   /*Velocidade de transmissão*/
-    unsigned int sequenceNumber;    /*Número de sequência da trama: 0, 1*/
-    unsigned int timeout;           /*Valor do temporizador: 1 s*/
-    unsigned int numTransmissions;  /*Número de tentativas em caso de falha*/
-    unsigned char frame[MAX_INFO_FRAME];     /*Trama*/
+    char port[20];                          /*Dispositivo /dev/ttySx, x = 0, 1*/
+    int baudRate;                           /*Velocidade de transmissão*/
+    unsigned int sequenceNumber;            /*Número de sequência da trama: 0, 1*/
+    unsigned int timeout;                   /*Valor do temporizador: 1 s*/
+    unsigned int numTransmissions;          /*Número de tentativas em caso de falha*/
+    unsigned char frame[MAX_INFO_FRAME];    /*Trama*/
 } linkLayer;
 
 linkLayer* dataLink;
 struct termios oldtio;
 
-// Estabelecimento da ligação de dados
+// Estabelecimento da Ligação de Dados
 
 /**
  * Estabelecimento da ligação entre Transmissor e Recetor
@@ -53,7 +53,7 @@ int initDataLink(char * port);
 // Receção e envio de tramas de supervisão
 
 /**
- *  Maquina de estados para receber trama de supervisão ou não numerada(SET, UA, RR, REJ, DISC)
+ * Maquina de estados para receber trama de supervisão ou não numerada(SET, UA, RR, REJ, DISC)
  * @param fd descritor da porta de série
  * @param period fase do protocolo de ligação de dados
  * @param status interviniente que recebe a frame
@@ -61,12 +61,20 @@ int initDataLink(char * port);
 */
 int receiveSupervisionFrame(int fd, Period period, Status status);
 
+
+/**
+ *  Retorna o campo de endereço esperado consoante o interveniente e a fase da ligação
+ * @param period fase da ligação de dados
+ * @param status interveniente
+ * @return campo de controlo esperado
+*/ 
 Control expectedAddress(Period period, Status status);
+
 
 /**
  * Verifica se o Campo de Controlo é o esperado pelo interviniente da ligação de dados que espera a trama dependendo da fase do protocolo
  * @param period fase do protocolo de ligação de dados
- * @param status interviniente que espera a frame
+ * @param status interveniente que espera a frame
  * @return FALSE se não é o campo de cotnrolo esperado e TRUE se é o esperado
 */
 int expectedControl(Period period, Status status, unsigned char ch);
@@ -76,6 +84,7 @@ int expectedControl(Period period, Status status, unsigned char ch);
  *  Envio de trama de supervisão/não numerada(SET, UA, RR, REJ, DISC)
  * @param fd descritor da porta de série
  * @param control campo de controlo da trama
+ * @param status interveniente que envia a frame
  * @return 0 em caso de sucesso e -1 em caso de falha
 */
 int sendSupervisionFrame(int fd, Control control, Status status);
@@ -118,29 +127,31 @@ Control buildAck(int validDataField, int expectedSequenceNumber);
 */
 int llwrite(int fd, unsigned char* buffer, int length);
 
+
 /**
  * Criação da frame I 
  * @param controlField C_N0 ou C_N1, consoante o número de série 
  * @param infoField campo de dados
  * @param infoFieldLength tamanho do campo de dados
- * @return
+ * @return 0 em caso de sucesso e -1 em caso de erro
 */
 int createFrameI(Control controlField, unsigned char* infoField, int infoFieldLength);
+
 
 /**
  * Escrita da frame I na porta de série
  * @param fd descritor da porta de série
  * @param length tamanho da trama I
- * @return
+ * @return 0 em caso de sucesso e -1 em caso de erro
 */
 int sendFrameI(int fd, int length);
 
 // Byte Stuffing e Destuffing
 
 /**
- * Aplica o mecanismo de byte stuffing para ...
- * @param tamanho original dos dados
- * @return 
+ * Aplica o mecanismo de byte stuffing substituindo o octeto 0x7E(Flag) por 0x7D 0x5E e o octeto 0x7D(Escape) por 0x7D 0x5D
+ * @param infoFieldLength tamanho original dos dados
+ * @return tamanho dos dados após operação de stuffing
 */
 int byteStuffing(int infoFieldLength);
 
