@@ -23,7 +23,7 @@ struct termios oldtio;
  * @param status TRANSMITTER / RECEIVER
  * @return identificador da ligacao de dados ou -1 em caso de erro
 */
-int llopen(int port, Status status);
+int llopen(char * port, Status status);
 
 
 /**
@@ -47,7 +47,7 @@ int openTransmitter(int fd);
  * @param port nome da porta de série
  * @return 0 em caso de sucesso e -1 em caso de falha
 */
-int initDataLink(int port);
+int initDataLink(char * port);
 
 
 // Receção e envio de tramas de supervisão
@@ -59,7 +59,9 @@ int initDataLink(int port);
  * @param status interviniente que recebe a frame
  * @return campo de controlo em caso de sucesso e -1 em caso de falha
 */
-unsigned char receiveSupervisionFrame(int fd, Period period, Status status);
+int receiveSupervisionFrame(int fd, Period period, Status status);
+
+Control expectedAddress(Period period, Status status);
 
 /**
  * Verifica se o Campo de Controlo é o esperado pelo interviniente da ligação de dados que espera a trama dependendo da fase do protocolo
@@ -76,7 +78,7 @@ int expectedControl(Period period, Status status, unsigned char ch);
  * @param control campo de controlo da trama
  * @return 0 em caso de sucesso e -1 em caso de falha
 */
-int sendSupervisionFrame(int fd, Control control);
+int sendSupervisionFrame(int fd, Control control, Status status);
 
 
 // Tranferencia de Dados - leitura da porta de serie
@@ -135,16 +137,42 @@ int sendFrameI(int fd, int length);
 
 // Byte Stuffing e Destuffing
 
-// TODO
-int byte_stuffing( int length);
+/**
+ * Aplica o mecanismo de byte stuffing para ...
+ * @param tamanho original dos dados
+ * @return 
+*/
+int byteStuffing(int infoFieldLength);
 
 
 /**
  * Aplica o mecanismo de byte destuffing para recuperar os octetos originais (antes da operação de stuffing)
+ * @return retorna o tamanho da trama antes da operação de stuffing
 */
 int byteDestuffing();
 
-// TODO - terminacao com envio e rececao de DISC; para ja so liberta a memoria e restaura configuracao da porta
-int llclose(int fd);
+/**
+ * Terminação da ligação de dados
+ * @param fd identificador da ligação de dados
+ * @param status TRANSMITTER / RECEIVER
+ * @return 0 em caso de sucesso e -1 em caso de erro
+*/
+int llclose(int fd, Status status);
+
+
+/**
+ * Terminação da ligação de dados: Receção da trama DISC pelo Recetor, envio da trama DISC (com timeout e número máximo de retransmissões) e receção da trama UA
+ * @param fd descritor da porta de série
+ * @return 0 em caso de sucesso e -1 em caso de falha
+*/
+int closeReceiver(int fd);
+
+
+/**
+ * Terminação da ligação de dados: Envio da trama DISC pelo Transmissor (com timeout e número máximo de retransmissões) e receção da trama DISC
+ * @param fd descritor da porta de série
+ * @return 0 em caso de sucesso e -1 em caso de falha
+*/
+int closeTransmitter(int fd);
 
 #endif

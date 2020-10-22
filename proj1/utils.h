@@ -65,4 +65,6 @@ int validBcc2(unsigned char * dataField, int length);
 */
 int isInfoSequenceNumber(unsigned char byte);
 
+int sizeFile(FILE *fp);
+
 #endif

@@ -111,7 +111,12 @@ char* getControlName(Control control) {
         str ="I_1";
         break;
     
+    case C_DISC:
+        str="C_DISC";
+        break;
+
     default:
+        perror("WRONG control field");
         break;
     }
 
@@ -155,4 +160,13 @@ int isInfoSequenceNumber(unsigned char byte){
   if(byte == C_N0 || byte == C_N1)
     return TRUE;
   return FALSE; 
+}
+
+
+int sizeFile(FILE *fp){
+    int lsize;
+    fseek(fp, 0, SEEK_END);
+    lsize = (int)ftell(fp);
+    rewind(fp);
+    return lsize;
 }

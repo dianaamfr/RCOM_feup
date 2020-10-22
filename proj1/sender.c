@@ -8,49 +8,67 @@
 #include <string.h>
 #include "datalink.h"
 #include "utils.h"
+#include "app.h"
 
 
 int main(int argc, char** argv) {
 
-  int port, fd;
 
   // Pode ser lido apenas o número da porta?
-  if(validateArgs(argc, argv) == -1) {
+  /*if(validateArgs(argc, argv) == -1) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    return -1;
-  }
+    return -1;  
+  }*/
 
-  port = atoi(&argv[1][9]);
-  
+  if ( (argc < 3)/* ||
+  	     ((strcmp("/dev/ttyS0", argv[1])!=0) &&
+  	      (strcmp("/dev/ttyS1", argv[1])!=0) &&
+          (strcmp("/dev/ttyS2", argv[1])!=0) &&
+          (strcmp("/dev/ttyS3", argv[1])!=0) &&
+          (strcmp("/dev/ttyS4", argv[1])!=0 ))*/) {
+      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+      exit(1);
+    }
+
   // A partir daqui será feito na app provavelmente
-  if((fd = llopen(port, TRANSMITTER)) < 0){
-    perror("llopen Transmitter");
+
+  if(sendFile(argv[1], argv[2])<0){
+      return -1;
+  }
+
+  /*if((fd = llopen(argv[1], TRANSMITTER)) < 0){
+    perror("Couldn't connect with Receiver");
     return -1;
   }
 
-  /* Usado para testar a receção da trama de info pelo recetor e receção de RR pelo emissor*/
+  // Usado para testar a receção da trama de info pelo recetor e receção de RR pelo emissor
   printf("Send Info Frame\n");
 
   unsigned char buffer[20];
-  buffer[0] = 0x17;
-  buffer[1] = 0x30;
-  buffer[2] = 0x16;
-  buffer[3] = 0x93;
-  buffer[4] = 0x50;
-  buffer[5] = 0x77;
+  buffer[0] = ESC;
+  buffer[1] = FLAG;
+  buffer[2] = 0x65;
+  buffer[3] = 0x54;
+  buffer[4] = 0x00;
+
+  unsigned char buffer1[20];
+  buffer[0] = 0x98;
+  buffer[1] = 0x11;
+  buffer[2] = 0x05;
+  buffer[3] = 0x5E;
 
 
-  if(llwrite(fd, buffer, 6) < 0) {
+  if(llwrite(fd, buffer, 5) < 0) {
     printf("deu erro");
     return -1;
   }
 
-  if(llwrite(fd, buffer, 6) < 0) {
+  if(llwrite(fd, buffer1, 4) < 0) {
     printf("deu erro");
     return -1;
   }
 
-  llclose(fd);
+  llclose(fd, TRANSMITTER);*/
   
   return 0;
 }
