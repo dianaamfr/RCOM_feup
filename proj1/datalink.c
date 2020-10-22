@@ -10,6 +10,13 @@
 
 // Estabelecimento da ligação de dados
 
+/*void intHandler(int dummy) {
+  alarm(0);
+  sleep(4);
+  return;
+}*/
+
+
 int llopen(char * port, Status status){
 
   int fd;
@@ -26,6 +33,7 @@ int llopen(char * port, Status status){
   } 
 
   signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
+  // signal(SIGINT, intHandler); // Simular Ruído
   
   tries = 0;     
   resend = FALSE; 
@@ -113,6 +121,7 @@ int openTransmitter(int fd) {
     if (receiveSupervisionFrame(fd, SETUP, TRANSMITTER) != -1){
       resend = FALSE; 
       alarm(0);
+      tries = 0;
       return 0;
     }
     // Tenta novamente no caso de falhar a receção de UA
@@ -131,14 +140,14 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
   int nr;
   Control control;
 
-  printf("Bytes read: \n");
+  //printf("Bytes read: \n");
 
   while(resend == FALSE) {
 
     if(state != STOP){
       nr = read(fd, &ch, 1);
-      if(nr > 0)
-        printf("%4X",ch);
+      /*if(nr > 0)
+        printf("%4X",ch);*/
     }                  
 
     switch(state) {
@@ -270,7 +279,6 @@ int sendSupervisionFrame(int fd, Control control, Status status) {
 // Tranferencia de Dados - leitura da porta de serie
 
 int llread(int fd, unsigned char* buffer){
-  printf("\nllread\n\n");
 
   int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
   int validDataField = TRUE;
@@ -278,7 +286,7 @@ int llread(int fd, unsigned char* buffer){
   if(dataFieldSize == -1) 
     validDataField = FALSE;
   else if(dataFieldSize == 0 && dataLink->frame[CONTROL_BYTE] == C_DISC)
-    return 0;
+    return -1;
 
 
   // Verificar se o ns recebido é o que se pretende
@@ -311,14 +319,14 @@ int receiveInfoFrame(int fd) {
   int nr, i = 0; 
   int end = FALSE; 
 
-  printf("Bytes read: \n");
+  //printf("Bytes read: \n");
 
   while(!end && i< MAX_INFO_FRAME) {
 
     if(iState != STOP){
       nr = read(fd, &ch, 1);
-      if(nr > 0)
-        printf("%4X",ch);
+      /*if(nr > 0)
+        printf("%4X",ch);*/
     }                  
 
     switch(iState) {
@@ -388,7 +396,7 @@ int receiveInfoFrame(int fd) {
         break;
 
       case STOP:
-        printf("\nReceived Information Frame\n");
+        printf("\nReceived Information Frame with NS = %d\n",dataLink->frame[CONTROL_BYTE]>>6 & 0x01);
         end = TRUE;
     
     }
@@ -443,8 +451,7 @@ Control buildAck(int validDataField, int expectedSequenceNumber){
 // Tranferencia de Dados - escrita na porta de serie
 
 int llwrite(int fd, unsigned char* buffer, int length) {
-  printf("\nllwrite\n\n");
-  
+
   Control controlByte;
 
   if(dataLink->sequenceNumber == 0)
@@ -469,8 +476,9 @@ int llwrite(int fd, unsigned char* buffer, int length) {
   int numWritten;
   int receivedControl;
 
-  printf("Sent I frame\n");
-
+  tries = 0;     
+  resend = FALSE; 
+  
   // Mecanismo de retransmissão da trama I
   while(tries < dataLink->numTransmissions){
     
@@ -489,7 +497,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
       if(receivedControl >> 7 == !dataLink->sequenceNumber){  // Eviou I0 e recebeu RR_1 | Enviou I1 e recebeu RR_0
         resend = FALSE; 
         alarm(0); // Desativa alarme
-        
+        tries = 0;
         dataLink->sequenceNumber = !dataLink->sequenceNumber; // Altera numero de serie para a proxima trama
         break;
       }
@@ -502,6 +510,9 @@ int llwrite(int fd, unsigned char* buffer, int length) {
 
     // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
+
+  if(tries == dataLink->numTransmissions)
+    return -1;
 
   return (numWritten - DELIMIT_INFO_SIZE); // length of the data packet length sent to the receiver
 }
@@ -580,10 +591,10 @@ int byteStuffing(int infoFieldLength) {
   }
 
   printf("Stuffing complete: \n");
-  for(int i = 0; i < frameIdx; i++){
+  /*for(int i = 0; i < frameIdx; i++){
     printf("%4X",dataLink->frame[i]);
   }
-  printf("\n");
+  printf("\n");*/
 
   free(aux);
   return frameIdx;
@@ -601,10 +612,10 @@ int byteDestuffing(int length){
   }
 
   printf("Destuffing complete: \n");
-  for(int i = 0; i < length; i++){
+  /*for(int i = 0; i < length; i++){
     printf("%4X",dataLink->frame[i]);
   }
-  printf("\n");
+  printf("\n");*/
 
   return length;
 }

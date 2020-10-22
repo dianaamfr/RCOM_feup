@@ -114,7 +114,7 @@ int receiveFile(char *port){
         return -1;
     }
 
-    FILE *fp = fopen("teste.jpg", "w"); //Cria o ficheiro
+    FILE *fp = fopen("bigFile.mp4", "w"); //Cria o ficheiro
     if (fp == NULL){
         return -1;
     }
@@ -123,11 +123,16 @@ int receiveFile(char *port){
 
     // Pacote de Dados
     while (1){
+        memset(packet,0,DATA_PACKET_SIZE);
+
         packetLength = llread(app.fd, packet);
         if (packetLength < 0){
             return -1;
         }
-  
+        
+        if(packetLength == 0)
+            continue;
+
         if (packet[0] == CTRL_PACKET_DATA){
             int seqNumber;
 
@@ -142,7 +147,7 @@ int receiveFile(char *port){
 
             sequenceNumberConfirm = (sequenceNumberConfirm + 1) % 256; //?
 
-            int dataLength = packetLength - 4;
+            int dataLength = packetLength - DATA_PACKET_HEADER;
 
             if (fwrite(data, sizeof(unsigned char), dataLength, fp) != dataLength){ //Escreve no ficheiro
                 return -1;
@@ -238,7 +243,7 @@ int parseDataPacket(unsigned char *packet, unsigned char *data, int *seqNumber){
 
     *seqNumber = (int)packet[1];
 
-    int datalength= 256 * (int)packet[2] + (int)packet[3]; //K=256*L1*L2
+    int datalength = 256 * (int)packet[2] + (int)packet[3]; //K=256*L1*L2
 
     for (int i = 0; i < datalength; i++){
         data[i] = packet[i + 4];
