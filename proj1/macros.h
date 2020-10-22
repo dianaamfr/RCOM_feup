@@ -16,13 +16,19 @@
 #define DATA_PACKET_HEADER     4
 #define DATA_PACKET_SIZE       DATA_SIZE + DATA_PACKET_HEADER
 
-#define CTRL_PACKET_DATA       0x01
-#define CTRL_PACKET_START      0x02
-#define CTRL_PACKET_END        0x03
-/*Type pacote de controlo: */
-#define FILESIZE               0x00
-#define FILENAME               0x01
+// Tipos de pacotes ao nível da Aplicação
+typedef enum PacketControl {
+    CTRL_PACKET_DATA = 0x01,
+    CTRL_PACKET_START = 0x02,
+    CTRL_PACKET_END = 0x03
+} PacketControl;
 
+typedef enum PacketParam {
+    FILESIZE = 0x00,
+    FILENAME = 0x01
+} PacketParam;
+
+#define MAX_FILE               255
 
 // DATA LINK LAYER
 

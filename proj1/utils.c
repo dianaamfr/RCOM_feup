@@ -10,7 +10,7 @@
 
 int validateArgs(int argc, char** argv) {
  
-    if((argc < 2) ||
+    if((argc != 2) ||
         ((strcmp("/dev/ttyS0", argv[1])!=0) &&
         (strcmp("/dev/ttyS1", argv[1])!=0) &&
         (strcmp("/dev/ttyS10", argv[1])!=0) &&
@@ -165,8 +165,15 @@ int isInfoSequenceNumber(unsigned char byte){
 
 int sizeFile(FILE *fp){
     int lsize;
+
+    // Procura fim do ficheiro
     fseek(fp, 0, SEEK_END);
+
+    // Obter a posição do fim do ficheiro => tamanho do ficheiro 
     lsize = (int)ftell(fp);
+
+    // Voltar ao início do ficheiro
     rewind(fp);
+
     return lsize;
 }

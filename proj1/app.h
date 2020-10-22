@@ -12,20 +12,19 @@
 #include "macros.h"
 
 
-struct appLayer {
-    int fd; 
-    Status st; /*TRANSMITTER,RECEIVER*/
-};
+typedef struct appLayer {
+    int fd;     /*Descritor correspondente à porta série*/
+    Status st;  /*TRANSMITTER, RECEIVER*/
+} appLayer;
 
-struct appLayer app;
+appLayer app;
 
 /**
  * Envia um ficheiro usando a porta série
  * @param port Nome da porta série
- * @param fileName Nome do ficheiro que queremos enviar
  * @return 
  */
-int sendFile(char *port, char *fileName);
+int sendFile(char *port);
 
 /**
  * Recebe um ficheiro enviado pela porta série
@@ -43,7 +42,7 @@ int receiveFile(char *port);
  * @param fileName 
  * @return Tamanho do packet
  */
-int controlPacket(unsigned char *packet,unsigned char controlByte,  int fileSize, char *fileName);
+int controlPacket(unsigned char *packet,unsigned char control,  int fileSize, char *fileName);
 
 /**
  * Constrói o campo de dados, recebendo um número de sequência e um buffer com os bytes
