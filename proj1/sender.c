@@ -52,10 +52,10 @@ int main(int argc, char** argv) {
   buffer[4] = 0x00;
 
   unsigned char buffer1[20];
-  buffer[0] = 0x98;
-  buffer[1] = 0x11;
-  buffer[2] = 0x05;
-  buffer[3] = 0x5E;
+  buffer1[0] = 0x98;
+  buffer1[1] = 0x11;
+  buffer1[2] = 0x05;
+  buffer1[3] = 0x5E;
 
 
   if(llwrite(fd, buffer, 5) < 0) {
