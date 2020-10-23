@@ -134,7 +134,7 @@ int openTransmitter(int fd) {
 // Receção e envio de tramas de supervisão
 
 int receiveSupervisionFrame(int fd, Period period, Status status) {
-
+ 
   State state = START;
   unsigned char ch, bcc = 0;
   int nr;
@@ -381,8 +381,9 @@ int receiveInfoFrame(int fd) {
           dataLink->frame[i] = ch;
           i++;
         }
-        else
-          iState = START;  
+        else{
+          iState = START; 
+        } 
         break;
 
       case BCC_OK:

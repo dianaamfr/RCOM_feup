@@ -12,9 +12,14 @@
 
 // APPLICATION LAYER
 
-#define DATA_SIZE              255
-#define DATA_PACKET_HEADER     4
-#define DATA_PACKET_SIZE       DATA_SIZE + DATA_PACKET_HEADER
+#define DATA_SIZE          255
+#define PACKET_HEADER      4
+#define PACKET_SIZE        DATA_SIZE + PACKET_HEADER
+
+#define MAX_FILE           255
+
+#define PACKET_L1   2
+#define PACKET_V1   3
 
 // Tipos de pacotes ao nível da Aplicação
 typedef enum PacketControl {
@@ -28,7 +33,6 @@ typedef enum PacketParam {
     FILENAME = 0x01
 } PacketParam;
 
-#define MAX_FILE               255
 
 // DATA LINK LAYER
 
@@ -36,7 +40,7 @@ typedef enum PacketParam {
 #define DELIMIT_INFO_SIZE  6
 #define CONTROL_BYTE      2
 
-#define MAX_DATA_FRAME     DATA_PACKET_SIZE + DELIMIT_INFO_SIZE
+#define MAX_DATA_FRAME     PACKET_SIZE + DELIMIT_INFO_SIZE
 #define MAX_INFO_FRAME     ((MAX_DATA_FRAME + 1) * 2) + HEADER_SIZE + 1
 
 

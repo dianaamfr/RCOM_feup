@@ -55,7 +55,7 @@ int controlPacket(unsigned char *packet,unsigned char control,  int fileSize, ch
  */
 int dataPacket(unsigned char *packet, int sequenceNumber, unsigned char *dataBuffer, int dataLength);
 
-int parseControlPacket(unsigned char *packet, int *fileSize, char *fileName);
+int readControlPacket(unsigned char *packet, int *fileSize, char *fileName);
 
 /**
  * Interpreta o pacote de dados no receiver
@@ -64,5 +64,6 @@ int parseControlPacket(unsigned char *packet, int *fileSize, char *fileName);
  * @param sequenceNumber Número de sequência do pacote, devolvido pela função
  * @return
  */
-int parseDataPacket(unsigned char *packet, unsigned char *data, int *sequenceNumber);
+int readDataPacket(unsigned char *packet, unsigned char *data, int *sequenceNumber);
 
+int buildV1(unsigned char *packet, int fileSize);
