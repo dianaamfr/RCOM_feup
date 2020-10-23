@@ -186,23 +186,26 @@ int receiveFile(char *port){
 
 
     if (sizeFile(fp) != fileSize){
-        printf("END fileSize does not match fileSize");
+        perror("FileSize expected does not match actual fileSize");
         return -1;
     }
 
-    int fileSizeEndPart;
-    char fileNameEndPart[255];
+    int V1; // V1 => filesize
+    char V2[MAX_FILE]; // V2 => filename
 
-    if (readControlPacket(packet, &fileSizeEndPart, fileNameEndPart) < 0){
+    if (readControlPacket(packet, &V1, V2) < 0){
+        perror("Error reading End packet");
         return -1;
     }
-    if((fileSize != fileSizeEndPart) || (strcmp(fileNameEndPart, fileName) != 0)){
-        printf("Erro, informação do fim do ficheiro não coincide com o início\n");
+    if((fileSize != V1) || (strcmp(V2, fileName) != 0)){
+        perror("Erro, informação do fim do ficheiro não coincide com o início");
         return -1;
     }
 
-    if (llclose(app.fd, app.st) < 0)
+    if (llclose(app.fd, app.st) < 0){
+        perror("Error llclose");
         return -1;
+    }
 
     return 0;
 }
@@ -230,7 +233,7 @@ int dataPacket(unsigned char *packet, int seqNumber, unsigned char *bufferData, 
 
 int controlPacket(unsigned char *packet,unsigned char controlByte,  int fileSize, char *fileName){
     // C | T1 | L1 | V1 | T2 | L2 | V2
-    // Tamanho do pacote de controlo = 3 octetos iniciais(C,T1,L1) + octetos ocupados por V1 + 2 octetos para T2 e L2 + Octetos ocupados pelo nome do ficheiro
+    // Tamanho do pacote de controlo = 3 octetos iniciais(C,T1,L1) + octetos ocupados por V1 + 2 octetos para T2 e L2 + Octetos ocupados pelo nome do ficheiro(V2)
     int packetSize = 0;
 
     packet[0] = controlByte; // C
@@ -245,19 +248,20 @@ int controlPacket(unsigned char *packet,unsigned char controlByte,  int fileSize
 
 
     // Relativos ao nome do ficheiro: T2 | L2 | V2
-    packet[3 + l1] = FILENAME; // T2
-    int T2 = 4 + l1; // T2 =Z Filename Len
-    int L2 = 5 + l1; // L2 => Filename
+    int T2 = 3 + l1;
+    packet[T2] = FILENAME; // T2
+    int L2 = T2 + 1; // L2 => Filename Len
+    int V2 = L2 + 1; // V2 => Filename
     int fileNameSize = (strlen(fileName) + 1);
     
     // Adiciona comprimento do nome do ficheiro
-    packet[T2] = (unsigned char)fileNameSize; // L2
+    packet[L2] = (unsigned char)fileNameSize; // L2
 
     for (unsigned int i = 0; i < fileNameSize; i++){
-        packet[L2 + i] = fileName[i]; // V2
+        packet[V2 + i] = fileName[i]; // V2
     }
 
-    packetSize += 2 + fileNameSize; // 2 octetos para T2 e L2 + Octetos ocupados pelo nome do ficheiro
+    packetSize += 2 + fileNameSize; // 2 octetos para T2 e L2 + Octetos ocupados pelo nome do ficheiro (V2)
 
     return packetSize;
 }
@@ -266,6 +270,7 @@ int controlPacket(unsigned char *packet,unsigned char controlByte,  int fileSize
 int readDataPacket(unsigned char *packet, unsigned char *data, int *seqNumber){
 
     if (packet[0] != CTRL_PACKET_DATA){
+        perror("Unexpected type of Packet - not a data packet");
         return -1;
     }
 
@@ -283,34 +288,38 @@ int readDataPacket(unsigned char *packet, unsigned char *data, int *seqNumber){
 
 int readControlPacket(unsigned char *packet, int *fileSize, char *fileName){
    
-    int length1,length2;
+    int l1,l2;
 
     if (packet[0] != CTRL_PACKET_START && packet[0] != CTRL_PACKET_END){
         perror("Not a Valid Control Packet");
         return -1;
     }
 
-    if (packet[1] == FILESIZE){
-        *fileSize = 0;
-        length1 = (int)packet[2];
-        for (int i = 0; i < length1; i++){
-            *fileSize = *fileSize * 256 + (int)packet[3 + i];
-        }
+    // Leitura dos octetos relativos ao tamanho do ficheiro
+    if (packet[1] != FILESIZE){
+       perror("FileSize was not found in the right byte of the packet");
+       return -1;
     }
-    else{
+    
+    *fileSize = 0;
+    l1 = (int)packet[2];
+    for (int i = 0; i < l1; i++){
+        *fileSize = *fileSize * 256 + (int)packet[3 + i]; // Filesize = resto1 + resto2 * 256 + resto3 * 256^2 ... (Bytes to decimal)
+    }
+    
+    // Leitura dos octetos relativos ao nome do ficheiro
+    int T2 = 3 + l1; // Onde começa a parte do nome do ficheiro
+    int L2 = T2 + 1;
+    int V2 = L2 + 1;
+
+    if (packet[T2] != FILENAME){
+        perror("FileName was not found in the right byte of the packet");
         return -1;
     }
 
-    int fileNamePart = 5 + length1; //Onde começa a parte do nome do ficheiro
-
-    if (packet[fileNamePart - 2] == FILENAME){
-        length2 = (int)packet[fileNamePart - 1];
-        for (int i = 0; i < length2; i++){
-            fileName[i] = packet[fileNamePart + i];
-        }
-    }
-    else{
-        return -1;
+    l2 = (int)packet[L2];
+    for (int i = 0; i < l2; i++){
+        fileName[i] = packet[V2 + i];
     }
 
     return 0;
