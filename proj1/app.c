@@ -59,6 +59,7 @@ int sendFile(char *port) {
             // Fim do ficheiro
             if (feof(fp)){
 
+                printf("\nApp: ns = %d\n", seqNumber);
                 // Constrói pacote de dados
                 packetLength = dataPacket(packet, seqNumber, data, length_read);
                 seqNumber = (seqNumber + 1) % 256; // NS varia na range [0-255] 
@@ -77,7 +78,7 @@ int sendFile(char *port) {
         }
 
         // Tamanho lido igual ao tamanho de um bloco de dados
-        printf("%d\n", seqNumber);
+        printf("\nApp: ns = %d\n", seqNumber);
         packetLength = dataPacket(packet, seqNumber, data, length_read);
         seqNumber = (seqNumber + 1) % 256; // NS varia na range [0-255] 
         
@@ -87,6 +88,7 @@ int sendFile(char *port) {
         }
     }
 
+    printf("\nApp: ns = %d\n", seqNumber);
     // Envia pacote de controlo indicando o fim da transmissão
     packetLength = controlPacket(packet,CTRL_PACKET_END, fileSize, fileName);
     if (llwrite(app.fd, packet, packetLength) < 0){ 
@@ -115,14 +117,16 @@ int receiveFile(char *port){
 
     unsigned char packet[PACKET_SIZE]; // Pacote
     unsigned char data[DATA_SIZE]; // Dados
-    int packetLength, fileSize;
+    int packetLength = 0, fileSize;
     char fileName[MAX_FILE];
 
-
-    if ((packetLength = llread(app.fd, packet)) < 0){
-        perror("Error llread");
-        return -1;
+    while(packetLength == 0){
+        if ((packetLength = llread(app.fd, packet)) < 0){
+            perror("Error llread");
+            return -1;
+        }
     }
+    
 
     // Pacote de Controlo
     if (packet[0] != CTRL_PACKET_START){
@@ -153,15 +157,11 @@ int receiveFile(char *port){
             perror("Error reading data packet from port with llread");
             return -1;
         }
-        printf("before");
+        
         // Nothing was read
-        if(packetLength == 0){
-            printf("recevied = %d\n",receivedSeqNumber);
-            printf("expected = %d\n",sequenceNumberConfirm);
-            printf("NON READ\n");
+        if(packetLength == 0)
             continue;
-        }
-        printf("after");
+        
         // Processar bloco de dados
         if (packet[0] == CTRL_PACKET_DATA){
             
@@ -171,12 +171,11 @@ int receiveFile(char *port){
             }
 
             if (sequenceNumberConfirm != receivedSeqNumber){ // Número de sequencia não coincide
-                printf("recevied = %d\n",receivedSeqNumber);
-                printf("expected = %d\n",sequenceNumberConfirm);
-                printf("Error sequence number \n");
+                perror("Error sequence number");
                 return -1;
             }
-
+            
+            printf("\nApp: ns = %d\n", sequenceNumberConfirm);
             sequenceNumberConfirm = (sequenceNumberConfirm + 1) % 256; //  NS varia na range [0-255] 
 
             dataLength = packetLength - PACKET_HEADER;
@@ -188,8 +187,10 @@ int receiveFile(char *port){
         }
 
         // Terminar receção de dados => chegou pacote que indica fim de transferência
-        else if (packet[0] == CTRL_PACKET_END)
+        else if (packet[0] == CTRL_PACKET_END){
+            printf("\nApp: ns = %d\n", sequenceNumberConfirm);
             break;
+        }
     }
 
 

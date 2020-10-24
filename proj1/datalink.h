@@ -15,8 +15,6 @@ typedef struct linkLayer {
 linkLayer* dataLink;
 struct termios oldtio;
 
-int testing;
-
 // Estabelecimento da Ligação de Dados
 
 /**
