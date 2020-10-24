@@ -18,7 +18,6 @@
 
 
 int llopen(char * port, Status status){
-
   int fd;
 
   if(initDataLink(port) == -1){
@@ -125,8 +124,10 @@ int openTransmitter(int fd) {
       return 0;
     }
     // Tenta novamente no caso de falhar a receção de UA
+    printf("LinkLayer: Retransmit Set\n");
   }
 
+  printf("LinkLayer: Retransmission attempts to send SET and receive UA exceeded\n");
   return -1;
 };
 
@@ -137,18 +138,14 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
  
   State state = START;
   unsigned char ch, bcc = 0;
-  int nr;
   Control control;
 
   //printf("Bytes read: \n");
 
   while(resend == FALSE) {
 
-    if(state != STOP){
-      nr = read(fd, &ch, 1);
-      /*if(nr > 0)
-        printf("%4X",ch);*/
-    }                  
+    if(state != STOP)
+      read(fd, &ch, 1);                
 
     switch(state) {
       case START:
@@ -194,7 +191,7 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
         break;
 
       case STOP:
-        printf("\nReceived %s message \n", getControlName(control));
+        printf("LinkLayer: Received %s message \n", getControlName(control));
         return control;
     }
   }
@@ -269,8 +266,7 @@ int sendSupervisionFrame(int fd, Control control, Status status) {
     return -1;
   }
 
-  printf("Sent %s message\n", getControlName(control));
-
+  printf("LinkLayer: Sent %s message\n", getControlName(control));
   return 0;
 
 }
@@ -307,7 +303,10 @@ int llread(int fd, unsigned char* buffer){
 
   if(validDataField == TRUE && expectedSequenceNumber == TRUE)
     memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);
-
+  else
+    dataFieldSize = 0;
+  
+    
   return dataFieldSize;
 }
 
@@ -397,7 +396,7 @@ int receiveInfoFrame(int fd) {
         break;
 
       case STOP:
-        printf("\nReceived Information Frame with NS = %d\n",dataLink->frame[CONTROL_BYTE]>>6 & 0x01);
+        printf("LinkLayer: Received Information Frame with NS = %d\n",dataLink->frame[CONTROL_BYTE]>>6 & 0x01);
         end = TRUE;
     
     }
@@ -503,17 +502,21 @@ int llwrite(int fd, unsigned char* buffer, int length) {
         break;
       }
       else{ // enviou I0 e recebeu REJ_0 | enviou I1 e recebeu REJ_1
+        printf("LinkLayer: Received REJ\n");
         resend = FALSE; 
         alarm(0); // Desativa alarme
+        tries++;
       }
 
     } 
-
+    printf("LinkLayer: Retransmit Data Packet\n");
     // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
 
-  if(tries == dataLink->numTransmissions)
+  if(tries == dataLink->numTransmissions){
+    printf("LinkLayer:  Retransmission attempts to send Data Packet and receive RR exceeded\n");
     return -1;
+  }
 
   return (numWritten - DELIMIT_INFO_SIZE); // length of the data packet length sent to the receiver
 }
@@ -591,7 +594,7 @@ int byteStuffing(int infoFieldLength) {
     }
   }
 
-  printf("Stuffing complete: \n");
+  printf("LinkLayer:  Stuffing complete.\n");
   /*for(int i = 0; i < frameIdx; i++){
     printf("%4X",dataLink->frame[i]);
   }
@@ -612,7 +615,7 @@ int byteDestuffing(int length){
     }
   }
 
-  printf("Destuffing complete: \n");
+  printf("LinkLayer:  Destuffing complete\n");
   /*for(int i = 0; i < length; i++){
     printf("%4X",dataLink->frame[i]);
   }
@@ -625,7 +628,7 @@ int byteDestuffing(int length){
 // Terminacao da ligacao de dados
 
 int llclose(int fd,  Status status){
-  printf("\nllclose\n\n");
+  printf("\nLinkLayer: llclose\n\n");
   tries = 0;     
   resend = FALSE; 
 
@@ -681,12 +684,15 @@ int closeReceiver(int fd){
     if (receiveSupervisionFrame(fd, END, RECEIVER) != -1){ // Espera UA
       resend = FALSE; 
       alarm(0);
+      tries = 0;
       return 0;
     } 
     // Se não receber UA volta a enviar DISC - retransmissão
+    printf("LinkLayer: Retransmit Disc\n");
   }
 
-  return 0;
+  printf("LinkLayer: Retransmission attempts to send DISC and receive UA exceeded\n");
+  return -1;
 
 }
 
@@ -706,10 +712,17 @@ int closeTransmitter(int fd){
 
     if (receiveSupervisionFrame(fd, DISCONNECT, TRANSMITTER) != -1){
       resend = FALSE; 
+      tries = 0;
       alarm(0);
       break;
     } 
     // Se não receber DISC volta a enviar DISC - retransmissão
+    printf("LinkLayer: Retransmit Disc\n");
+  }
+
+  if(tries == dataLink->numTransmissions){
+    printf("LinkLayer: Retransmission attempts to send DISC and receive DISC exceeded\n");
+    return -1;
   }
 
   if(sendSupervisionFrame(fd, C_UA, TRANSMITTER) == -1){
