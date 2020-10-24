@@ -77,8 +77,10 @@ int sendFile(char *port) {
         }
 
         // Tamanho lido igual ao tamanho de um bloco de dados
+        printf("%d\n", seqNumber);
         packetLength = dataPacket(packet, seqNumber, data, length_read);
         seqNumber = (seqNumber + 1) % 256; // NS varia na range [0-255] 
+        
         if (llwrite(app.fd, packet, packetLength) < 0){
             fclose(fp);            
             return -1;
@@ -151,11 +153,15 @@ int receiveFile(char *port){
             perror("Error reading data packet from port with llread");
             return -1;
         }
-        
+        printf("before");
         // Nothing was read
-        if(packetLength == 0)
+        if(packetLength == 0){
+            printf("recevied = %d\n",receivedSeqNumber);
+            printf("expected = %d\n",sequenceNumberConfirm);
+            printf("NON READ\n");
             continue;
-
+        }
+        printf("after");
         // Processar bloco de dados
         if (packet[0] == CTRL_PACKET_DATA){
             
@@ -165,6 +171,8 @@ int receiveFile(char *port){
             }
 
             if (sequenceNumberConfirm != receivedSeqNumber){ // Número de sequencia não coincide
+                printf("recevied = %d\n",receivedSeqNumber);
+                printf("expected = %d\n",sequenceNumberConfirm);
                 printf("Error sequence number \n");
                 return -1;
             }

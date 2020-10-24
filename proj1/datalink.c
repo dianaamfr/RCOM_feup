@@ -10,15 +10,14 @@
 
 // Estabelecimento da ligação de dados
 
-/*void intHandler(int dummy) {
-  alarm(0);
-  sleep(4);
+void intHandler(int dummy) {
+  testing = TRUE;
   return;
-}*/
+}
 
 
 int llopen(char * port, Status status){
-
+  testing = FALSE;
   int fd;
 
   if(initDataLink(port) == -1){
@@ -33,7 +32,7 @@ int llopen(char * port, Status status){
   } 
 
   signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
-  // signal(SIGINT, intHandler); // Simular Ruído
+  signal(SIGINT, intHandler); // Simular Ruído
   
   tries = 0;     
   resend = FALSE; 
@@ -195,6 +194,7 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
 
       case STOP:
         printf("\nReceived %s message \n", getControlName(control));
+        sleep(2);
         return control;
     }
   }
@@ -270,7 +270,7 @@ int sendSupervisionFrame(int fd, Control control, Status status) {
   }
 
   printf("Sent %s message\n", getControlName(control));
-
+  sleep(2);
   return 0;
 
 }
@@ -307,7 +307,10 @@ int llread(int fd, unsigned char* buffer){
 
   if(validDataField == TRUE && expectedSequenceNumber == TRUE)
     memcpy(buffer,&dataLink->frame[HEADER_SIZE], dataFieldSize);
-
+  else
+    dataFieldSize = 0;
+  
+    
   return dataFieldSize;
 }
 
@@ -414,8 +417,11 @@ int receiveInfoFrame(int fd) {
   i = byteDestuffing(i);
 
   int dataSize = i - DELIMIT_INFO_SIZE;
-  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
+  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1 && testing == FALSE)
     return dataSize;
+
+  if(testing == TRUE)
+    testing = FALSE;
 
   return -1; // Erro no BCC2
 
@@ -503,17 +509,21 @@ int llwrite(int fd, unsigned char* buffer, int length) {
         break;
       }
       else{ // enviou I0 e recebeu REJ_0 | enviou I1 e recebeu REJ_1
+        printf("REJ\n");
         resend = FALSE; 
         alarm(0); // Desativa alarme
+        tries++;
       }
 
     } 
-
+    printf("Retransmitir");
     // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
 
-  if(tries == dataLink->numTransmissions)
+  if(tries == dataLink->numTransmissions){
+    printf("ERROR");
     return -1;
+  }
 
   return (numWritten - DELIMIT_INFO_SIZE); // length of the data packet length sent to the receiver
 }
