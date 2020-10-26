@@ -12,7 +12,7 @@
 #include "app.h"
 
 
-int sendFile(char *port) {
+int sendFile(char* port) {
 
     app.st = TRANSMITTER;
 
@@ -30,83 +30,85 @@ int sendFile(char *port) {
 
     // Estabelecer ligação entre recetor e emissor
     if ((app.fd = llopen(port, app.st)) <= 0){
+        perror("Error in llopen");
+        fclose(fp);      
         return -1;
     }
 
     unsigned char packet[PACKET_SIZE];
-    int fileSize = sizeFile(fp); // Tamanho do ficheiro
-    
+    int fileSize, packetLength;
+
+    // Tamanho do ficheiro
+    fileSize = sizeFile(fp);
+
     // Constrói pacote de controlo indicando inicio da transmissão
-    int packetLength = controlPacket(packet, CTRL_PACKET_START, fileSize, fileName);
+    packetLength = controlPacket(packet, CTRL_PACKET_START, fileSize, fileName);
 
     // Envio do pacote inicial para o recetor através da porta de série
     if (llwrite(app.fd, packet, packetLength) < 0){ 
+        perror("Error in llwrite sending start packet");
         fclose(fp);        
         return -1;
     }
 
     // Transmissão dos Pacotes Dados
     unsigned char data[DATA_SIZE];
-    int length_read;
-    int seqNumber = 0;
+    int nr, seqNumber = 0;
 
     while (TRUE){
-        // Lê parte da informação do ficheiro
-        length_read = fread(data, sizeof(unsigned char), DATA_SIZE, fp); 
-        
-        // Tamanho lido inferior ao tamanho de um bloco de dados 
-        if (length_read != DATA_SIZE){
-            // Fim do ficheiro
-            if (feof(fp)){
 
-                printf("\nApp: ns = %d\n", seqNumber);
-                // Constrói pacote de dados
-                packetLength = dataPacket(packet, seqNumber, data, length_read);
-                seqNumber = (seqNumber + 1) % 256; // NS varia na range [0-255] 
-
-                // Envia pacote de dados
-                if (llwrite(app.fd, packet, packetLength) < 0){
-                    fclose(fp);
-                    return -1;
-                }
-                break; // Terminou a leitura
-            }
-            else{
-                perror("Error reading from file\n");
+        // Tamanho lido inferior ao tamanho de um bloco de dados e não é fim de ficheiro
+        if ((nr = fread(data, sizeof(unsigned char), DATA_SIZE, fp)) != DATA_SIZE && !feof(fp)){
+            if(fclose(fp) < 0){
+                perror("Error closing fd");            
                 return -1;
             }
+            perror("Error reading from file");
+            return -1;
         }
 
-        // Tamanho lido igual ao tamanho de um bloco de dados
         printf("\nApp: ns = %d\n", seqNumber);
-        packetLength = dataPacket(packet, seqNumber, data, length_read);
+        packetLength = dataPacket(packet, seqNumber, data, nr);
         seqNumber = (seqNumber + 1) % 256; // NS varia na range [0-255] 
         
         if (llwrite(app.fd, packet, packetLength) < 0){
-            fclose(fp);            
+            if(fclose(fp) < 0){
+                perror("Error closing fd");            
+                return -1;
+            }
+            perror("Error llwrite - sending data packet");            
             return -1;
         }
+
+        // Fim do ficheiro
+        if(feof(fp)){
+            if(fclose(fp) < 0){
+                perror("Error closing fd");            
+                return -1;
+            }
+            break;
+        } 
+            
     }
 
     printf("\nApp: ns = %d\n", seqNumber);
     // Envia pacote de controlo indicando o fim da transmissão
     packetLength = controlPacket(packet,CTRL_PACKET_END, fileSize, fileName);
     if (llwrite(app.fd, packet, packetLength) < 0){ 
-        fclose(fp);        
+        perror("Error llwrite - sending end packet\n");           
         return -1;
     }
 
     if (llclose(app.fd, app.st) < 0){
+        perror("Error llclose\n");     
         return -1;
     }
-    if (fclose(fp) != 0){
-        return -1;
-    }
+
     return 0;
 }
 
 
-int receiveFile(char *port){
+int receiveFile(char* port){
 
     app.st = RECEIVER;
 
@@ -117,8 +119,7 @@ int receiveFile(char *port){
 
     unsigned char packet[PACKET_SIZE]; // Pacote
     unsigned char data[DATA_SIZE]; // Dados
-    int packetLength = 0, fileSize;
-    char fileName[MAX_FILE];
+    int packetLength = 0;
 
     while(packetLength == 0){
         if ((packetLength = llread(app.fd, packet)) < 0){
@@ -126,13 +127,15 @@ int receiveFile(char *port){
             return -1;
         }
     }
-    
 
     // Pacote de Controlo
     if (packet[0] != CTRL_PACKET_START){
         perror("Should have received Start Control Packet");
         return -1;
-    }
+    }   
+
+    int fileSize;
+    char fileName[MAX_FILE];
     
     if (readControlPacket(packet, &fileSize, fileName) < 0){
         perror("Error Reading Start Control Packet");
@@ -146,8 +149,7 @@ int receiveFile(char *port){
         return -1;
     }
 
-    int sequenceNumberConfirm = 0;
-    int receivedSeqNumber, dataLength;
+    int sequenceNumberConfirm = 0, receivedSeqNumber, dataLength;
 
     // Pacote de Dados
     while (TRUE){
@@ -206,8 +208,13 @@ int receiveFile(char *port){
         perror("Error reading End packet");
         return -1;
     }
-    if((fileSize != V1) || (strcmp(V2, fileName) != 0)){
-        perror("Erro, informação do fim do ficheiro não coincide com o início");
+    if((fileSize != V1)){
+        perror("Error, final file size does not match initial");
+        return -1;
+    }
+
+    if(strcmp(V2, fileName) != 0){
+        perror("Error, final file name doesn't match initial");
         return -1;
     }
 
@@ -220,27 +227,23 @@ int receiveFile(char *port){
 }
 
 
-int dataPacket(unsigned char *packet, int seqNumber, unsigned char *bufferData, int dataLength){
+int dataPacket(unsigned char* packet, int seqNumber, unsigned char* data, int len){
 
+    packet[0] = CTRL_PACKET_DATA; // C
+    packet[1] = (unsigned char)seqNumber; // Ns
     // L2 | L1 => número de octetos do campo de dados
     // K = 256 * L2 + L1
-    int packetlength1 = dataLength % 256;
-    int packetlength2 = dataLength / 256;
+    packet[2] = (unsigned char)(len / 256); // L2
+    packet[3] = (unsigned char)(len % 256); // L1
 
-    packet[0] = CTRL_PACKET_DATA;
-    packet[1] = (unsigned char)seqNumber; 
-    packet[2] = (unsigned char)packetlength2;
-    packet[3] = (unsigned char)packetlength1;
+    for (int i = 0; i < len; i++)
+        packet[i + PACKET_HEADER] = data[i];
 
-    for (int i = 0; i < dataLength; i++){
-        packet[i + PACKET_HEADER] = bufferData[i];
-    }
-
-    return dataLength + PACKET_HEADER;
+    return len + PACKET_HEADER;
 }
 
 
-int controlPacket(unsigned char *packet,unsigned char controlByte,  int fileSize, char *fileName){
+int controlPacket(unsigned char* packet,unsigned char controlByte,  int fileSize, char* fileName){
     // C | T1 | L1 | V1 | T2 | L2 | V2
     // Tamanho do pacote de controlo = 3 octetos iniciais(C,T1,L1) + octetos ocupados por V1 + 2 octetos para T2 e L2 + Octetos ocupados pelo nome do ficheiro(V2)
     int packetSize = 0;
@@ -276,7 +279,7 @@ int controlPacket(unsigned char *packet,unsigned char controlByte,  int fileSize
 }
 
 
-int readDataPacket(unsigned char *packet, unsigned char *data, int *seqNumber){
+int readDataPacket(unsigned char* packet, unsigned char* data, int* seqNumber){
 
     if (packet[0] != CTRL_PACKET_DATA){
         perror("Unexpected type of Packet - not a data packet");
@@ -285,7 +288,7 @@ int readDataPacket(unsigned char *packet, unsigned char *data, int *seqNumber){
 
     *seqNumber = (int)packet[1];
 
-    int datalength = 256 * (int)packet[2] + (int)packet[3]; // K = 256 * L1 * L2
+    int datalength = 256 * (int)packet[2] + (int)packet[3]; // K = 256 * L2 + L1
 
     for (int i = 0; i < datalength; i++){
         data[i] = packet[i + PACKET_HEADER];
@@ -295,7 +298,7 @@ int readDataPacket(unsigned char *packet, unsigned char *data, int *seqNumber){
 }
 
 
-int readControlPacket(unsigned char *packet, int *fileSize, char *fileName){
+int readControlPacket(unsigned char* packet, int* fileSize, char* fileName){
    
     int l1,l2;
 
@@ -335,8 +338,8 @@ int readControlPacket(unsigned char *packet, int *fileSize, char *fileName){
 }
 
 
-int buildV1(unsigned char *packet, int fileSize){
-    int fileSizeLen = 0; // Numero de bytes ocupados pelo tamanho do ficheiro no packet a enviar
+int buildV1(unsigned char* packet, int fileSize){
+    int fileSizeLen = 0; // Vai guardar o numero de bytes ocupados pelo tamanho do ficheiro no packet a enviar
     int sizeToProcess = fileSize;
     int rest;
 

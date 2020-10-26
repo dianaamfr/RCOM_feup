@@ -65,6 +65,11 @@ int validBcc2(unsigned char * dataField, int length);
 */
 int isInfoSequenceNumber(unsigned char byte);
 
+/**
+ * Devolve o tamanho do ficheiro
+ * @param fp descritor do ficheiro
+ * @return tamanho do ficheiro
+ */
 int sizeFile(FILE *fp);
 
 #endif
