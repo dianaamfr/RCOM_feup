@@ -15,6 +15,8 @@ typedef struct linkLayer {
 linkLayer* dataLink;
 struct termios oldtio;
 
+// int generateBccError; // simular erros no bcc
+
 // Estabelecimento da Ligação de Dados
 
 /**

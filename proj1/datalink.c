@@ -10,11 +10,19 @@
 
 // Estabelecimento da ligação de dados
 
-void intHandler(int dummy) {
+// Para simular atrasos na receção da informação/Ruído ao pressionar CTRL-C
+/*void delayAnswer(int dummy) {
   alarm(0);
   sleep(4);
   return;
-}
+}*/
+
+// Para simular erros nos BCC ao pressionar CTRL-C
+/*void bccError(int dummy) {
+  printf("changing bcc\n");
+  generateBccError = !generateBccError;
+  return;
+}*/
 
 
 int llopen(char * port, Status status){
@@ -32,7 +40,7 @@ int llopen(char * port, Status status){
   } 
 
   signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
-  signal(SIGINT, intHandler); // Simular Ruído
+  // signal(SIGINT, delayAnswer); // Para simular atrasos na receção da informação/Ruído
   
   tries = 0;     
   resend = FALSE; 
@@ -88,6 +96,9 @@ int initDataLink(char * port) {
 
 
 int openReceiver(int fd) {
+  // Para simular erros nos BCC no receiver
+
+  // signal(SIGINT, bccError); // Para simular erros nos BCC ao pressionar CTRL-C
 
   if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { // Espera por trama SET 
     perror("Error receiving SET frame");
@@ -105,7 +116,9 @@ int openReceiver(int fd) {
 
 
 int openTransmitter(int fd) {
-  
+   // Para simular erros nos BCC no receiver
+  // generateBccError = FALSE;
+
   // (Re)transmissao da trama SET
   while(tries < dataLink->numTransmissions){
     
@@ -502,9 +515,9 @@ int llwrite(int fd, unsigned char* buffer, int length) {
         break;
       }
       else{ // enviou I0 e recebeu REJ_0 | enviou I1 e recebeu REJ_1
+        alarm(0); // Desativa alarme
         printf("LinkLayer: Received REJ\n");
         resend = FALSE; 
-        alarm(0); // Desativa alarme
         tries++;
       }
 

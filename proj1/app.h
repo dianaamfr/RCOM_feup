@@ -24,8 +24,8 @@ typedef struct fileData {
 
 typedef struct packetData {
     int ns;     /* número de sequência */
-    unsigned char buf[DATA_SIZE];
-    int len;
+    unsigned char buf[DATA_SIZE]; /* buffer de dados */
+    int len;    /* tamanho do buffer de dados */
 } packetData;
 
 appLayer app;
