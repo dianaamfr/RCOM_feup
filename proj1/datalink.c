@@ -10,11 +10,11 @@
 
 // Estabelecimento da ligação de dados
 
-/*void intHandler(int dummy) {
+void intHandler(int dummy) {
   alarm(0);
   sleep(4);
   return;
-}*/
+}
 
 
 int llopen(char * port, Status status){
@@ -32,7 +32,7 @@ int llopen(char * port, Status status){
   } 
 
   signal(SIGALRM,alarmHandler); // Instala rotina que atende interrupcao do alarme
-  // signal(SIGINT, intHandler); // Simular Ruído
+  signal(SIGINT, intHandler); // Simular Ruído
   
   tries = 0;     
   resend = FALSE; 
