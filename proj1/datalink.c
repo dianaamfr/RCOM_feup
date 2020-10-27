@@ -137,7 +137,9 @@ int openTransmitter(int fd) {
       return 0;
     }
     // Tenta novamente no caso de falhar a receção de UA
-    printf("LinkLayer: Retransmit Set\n");
+    if(tries != dataLink->numTransmissions){
+      printf("LinkLayer: Retransmit Set\n");
+    }
   }
 
   printf("LinkLayer: Retransmission attempts to send SET and receive UA exceeded\n");
@@ -521,8 +523,11 @@ int llwrite(int fd, unsigned char* buffer, int length) {
         tries++;
       }
 
-    } 
-    printf("LinkLayer: Retransmit Data Packet\n");
+    }
+    
+    if(tries != dataLink->numTransmissions){
+      printf("LinkLayer: Retransmit Data Packet\n");
+    }
     // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
 
@@ -700,8 +705,11 @@ int closeReceiver(int fd){
       tries = 0;
       return 0;
     } 
+
+    if(tries != dataLink->numTransmissions){
     // Se não receber UA volta a enviar DISC - retransmissão
-    printf("LinkLayer: Retransmit Disc\n");
+      printf("LinkLayer: Retransmit Disc\n");
+    }
   }
 
   printf("LinkLayer: Retransmission attempts to send DISC and receive UA exceeded\n");
@@ -730,7 +738,9 @@ int closeTransmitter(int fd){
       break;
     } 
     // Se não receber DISC volta a enviar DISC - retransmissão
-    printf("LinkLayer: Retransmit Disc\n");
+    if(tries != dataLink->numTransmissions){
+      printf("LinkLayer: Retransmit Disc\n");
+    }
   }
 
   if(tries == dataLink->numTransmissions){
