@@ -12,8 +12,7 @@
 
 // Para simular atrasos na receção da informação/Ruído ao pressionar CTRL-C
 /*void delayAnswer(int dummy) {
-  alarm(0);
-  sleep(4);
+  sleep(10);
   return;
 }*/
 
@@ -88,7 +87,7 @@ int initDataLink(char * port) {
 	dataLink->sequenceNumber = 0; // Nr sequencia esperado pelo recetor e a enviar pelo emissor
 
   dataLink->timeout = TIMEOUT;
-  dataLink->numTransmissions = MAX_RETR;
+  dataLink->numTransmissions = MAX_RETR + 1; // retransmissoes + tentativa inicial
   setMaxTries(dataLink->numTransmissions);
 
   return 0;
@@ -96,8 +95,7 @@ int initDataLink(char * port) {
 
 
 int openReceiver(int fd) {
-  // Para simular erros nos BCC no receiver
-
+  
   // signal(SIGINT, bccError); // Para simular erros nos BCC ao pressionar CTRL-C
 
   if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { // Espera por trama SET 
@@ -138,7 +136,8 @@ int openTransmitter(int fd) {
     }
     // Tenta novamente no caso de falhar a receção de UA
     if(tries != dataLink->numTransmissions){
-      printf("LinkLayer: Retransmit Set\n");
+      printf("LinkLayer: Timeout - %d seconds passed without receiving UA!\n", dataLink->timeout);
+      printf("LinkLayer: Retransmit SET - retry nr : %d \n", tries);
     }
   }
 
@@ -526,7 +525,8 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     }
     
     if(tries != dataLink->numTransmissions){
-      printf("LinkLayer: Retransmit Data Packet\n");
+      printf("LinkLayer: Timeout - %d seconds passed without receiving RR_%d!\n",dataLink->timeout, !dataLink->sequenceNumber);
+      printf("LinkLayer: Retransmit I_%d - retry nr : %d \n", dataLink->sequenceNumber, tries);
     }
     // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
@@ -708,7 +708,8 @@ int closeReceiver(int fd){
 
     if(tries != dataLink->numTransmissions){
     // Se não receber UA volta a enviar DISC - retransmissão
-      printf("LinkLayer: Retransmit Disc\n");
+      printf("LinkLayer: Timeout - %d seconds passed without receiving UA!\n",dataLink->timeout);
+      printf("LinkLayer: Retransmit DISC - retry nr : %d \n", tries);
     }
   }
 
@@ -739,7 +740,8 @@ int closeTransmitter(int fd){
     } 
     // Se não receber DISC volta a enviar DISC - retransmissão
     if(tries != dataLink->numTransmissions){
-      printf("LinkLayer: Retransmit Disc\n");
+      printf("LinkLayer: Timeout - %d seconds passed without receiving DISC!\n" , dataLink->timeout);
+      printf("LinkLayer: Retransmit DISC - retry nr : %d \n", tries);
     }
   }
 
