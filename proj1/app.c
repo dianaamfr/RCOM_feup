@@ -44,6 +44,7 @@ int sendFile(char* port) {
     // Constrói pacote de controlo indicando inicio da transmissão
     packetLength = controlPacket(packet, CTRL_PACKET_START, &fileDt);
 
+    printf("\nApp: Send Start Packet\n");
     // Envio do pacote inicial para o recetor através da porta de série
     if (llwrite(app.fd, packet, packetLength) < 0){ 
         perror("Error in llwrite sending start packet");
@@ -92,7 +93,7 @@ int sendFile(char* port) {
             
     }
 
-    printf("\nApp: ns = %d\n", seqNumber);
+    printf("\nApp: Send End Packet\n");
     // Envia pacote de controlo indicando o fim da transmissão
     packetLength = controlPacket(packet,CTRL_PACKET_END, &fileDt);
     if (llwrite(app.fd, packet, packetLength) < 0){ 
@@ -117,10 +118,12 @@ int receiveFile(char* port){
         perror("Error llopen");
         return -1;
     }
-
+    
+    printf("\n");
     unsigned char packet[PACKET_SIZE]; // Pacote
     int packetLength = 0;
 
+    // Pacote de Controlo
     while(packetLength == 0){
         if ((packetLength = llread(app.fd, packet)) < 0){
             perror("Error llread");
@@ -128,11 +131,11 @@ int receiveFile(char* port){
         }
     }
 
-    // Pacote de Controlo
     if (packet[0] != CTRL_PACKET_START){
         perror("Should have received Start Control Packet");
         return -1;
-    }   
+    }
+    printf("App: Received Start Packet \n\n");
 
     fileData fileStartData;
     if (readControlPacket(packet, &fileStartData) < 0){
@@ -166,6 +169,7 @@ int receiveFile(char* port){
         // Processar bloco de dados
         if (packet[0] == CTRL_PACKET_DATA){
             
+            printf("App: ns = %d\n\n", sequenceNumberConfirm);
             if (readDataPacket(packet, &data) < 0){
                 perror("Error reading data packet");
                 return -1;
@@ -176,7 +180,6 @@ int receiveFile(char* port){
                 return -1;
             }
             
-            printf("\nApp: ns = %d\n", sequenceNumberConfirm);
             sequenceNumberConfirm = (sequenceNumberConfirm + 1) % 256; //  NS varia na range [0-255] 
 
             if (fwrite(data.buf, sizeof(unsigned char), data.len, fp) != data.len){ //Escreve no ficheiro
@@ -187,7 +190,7 @@ int receiveFile(char* port){
 
         // Terminar receção de dados => chegou pacote que indica fim de transferência
         else if (packet[0] == CTRL_PACKET_END){
-            printf("\nApp: ns = %d\n", sequenceNumberConfirm);
+            printf("App: Received End Packet\n\n");
             break;
         }
     }

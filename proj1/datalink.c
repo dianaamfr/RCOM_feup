@@ -12,7 +12,8 @@
 
 // Para simular atrasos na receção da informação/Ruído ao pressionar CTRL-C
 /*void delayAnswer(int dummy) {
-  sleep(10);
+  generateBccError = TRUE;
+  sleep(4);
   return;
 }*/
 
@@ -95,7 +96,7 @@ int initDataLink(char * port) {
 
 
 int openReceiver(int fd) {
-  
+  // generateBccError = FALSE;
   // signal(SIGINT, bccError); // Para simular erros nos BCC ao pressionar CTRL-C
 
   if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { // Espera por trama SET 
@@ -489,6 +490,7 @@ int llwrite(int fd, unsigned char* buffer, int length) {
 
   int numWritten;
   int receivedControl;
+  int rejReceived = FALSE;
 
   tries = 0;     
   resend = FALSE; 
@@ -517,7 +519,8 @@ int llwrite(int fd, unsigned char* buffer, int length) {
       }
       else{ // enviou I0 e recebeu REJ_0 | enviou I1 e recebeu REJ_1
         alarm(0); // Desativa alarme
-        printf("LinkLayer: Received REJ\n");
+        rejReceived = TRUE;
+        printf("LinkLayer: Received REJ - antecipate retransmission \n");
         resend = FALSE; 
         tries++;
       }
@@ -525,9 +528,12 @@ int llwrite(int fd, unsigned char* buffer, int length) {
     }
     
     if(tries != dataLink->numTransmissions){
-      printf("LinkLayer: Timeout - %d seconds passed without receiving RR_%d!\n",dataLink->timeout, !dataLink->sequenceNumber);
+      if(!rejReceived)
+        printf("LinkLayer: Timeout - %d seconds passed without receiving RR_%d!\n",dataLink->timeout, !dataLink->sequenceNumber);
       printf("LinkLayer: Retransmit I_%d - retry nr : %d \n", dataLink->sequenceNumber, tries);
     }
+
+    rejReceived = FALSE;
     // Ocorreu timeout ou alarme foi antecipado por REJ => retransmitir
   }
 
@@ -612,7 +618,7 @@ int byteStuffing(int infoFieldLength) {
     }
   }
 
-  printf("LinkLayer:  Stuffing complete.\n");
+  printf("LinkLayer: Stuffing complete.\n");
   /*for(int i = 0; i < frameIdx; i++){
     printf("%4X",dataLink->frame[i]);
   }
@@ -633,7 +639,7 @@ int byteDestuffing(int length){
     }
   }
 
-  printf("LinkLayer:  Destuffing complete\n");
+  printf("LinkLayer: Destuffing complete\n");
   /*for(int i = 0; i < length; i++){
     printf("%4X",dataLink->frame[i]);
   }
