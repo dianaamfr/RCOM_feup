@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <string.h>
 #include "utils.h"
+#include <sys/time.h>
+
 
 int validateArgs(int argc, char** argv) {
  
@@ -149,7 +151,7 @@ int validBcc2(unsigned char * dataField, int length) {
     bcc_calculated = createBCC(bcc_calculated, dataField[i]);
   }
 
-  if(bcc_calculated == bcc_received)
+  if(bcc_calculated == bcc_received && !generateBCC2Error())
     return 0;
   
   return -1;
@@ -178,9 +180,32 @@ int sizeFile(FILE *fp){
     return lsize;
 }
 
+
 void showFileInfo(char * fileName, int fileSize){
     printf("\n");
     printf("File Information:\n");
     printf("> name: %s\n", fileName);
     printf("> size: %d bytes\n", fileSize);
+}
+
+
+int generateBCC1Error(){
+    double r = (double)rand() / RAND_MAX;
+    return r < BCC1_ERROR;
+}
+
+
+int generateBCC2Error(){
+    double r = (double)rand() / RAND_MAX;
+    return r < BCC2_ERROR;
+}
+
+void printElapsedTime(struct timeval * begin){
+    struct timeval end;
+    gettimeofday(&end, 0);
+    long seconds = end.tv_sec - begin->tv_sec;
+    long microseconds = end.tv_usec - begin->tv_usec;
+    double elapsed = seconds + microseconds*1e-6;
+
+    printf("Time measured: %.3f seconds.\n", elapsed);
 }

@@ -10,6 +10,7 @@
 #include "alarm.h"
 #include "utils.h"
 #include "app.h"
+#include <sys/time.h>
 
 int sendFile(char* port) {
 
@@ -124,6 +125,12 @@ int receiveFile(char* port){
     unsigned char packet[PACKET_SIZE]; // Pacote
     int packetLength = 0;
 
+
+    // Iniciar medição do tempo
+    struct timeval begin;
+    gettimeofday(&begin, 0);
+
+
     // Pacote de Controlo
     while(packetLength == 0){
         if ((packetLength = llread(app.fd, packet)) < 0){
@@ -215,6 +222,9 @@ int receiveFile(char* port){
         perror("Error, final file name doesn't match initial");
         return -1;
     }
+
+    // Parar de medir o tempo e calcular tempo que passou
+    printElapsedTime(&begin);
 
     showFileInfo(fileStartData.fileName, sizeFile(fp));
 

@@ -7,7 +7,7 @@ begin:
 
 generate:
 		@echo "Creating ouput files..."
-		gcc receiver.c ../alarm.c ../datalink.c ../utils.c ../app.c -o receiver -Wall
+		gcc receiver.c ../alarm.c ../datalink.c ../utils.c ../app.c -o receiver -Wall -lm
 clean:
 		@echo "Cleaning up..."
 		-rm sender receiver -f

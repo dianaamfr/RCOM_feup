@@ -7,6 +7,7 @@
 #include <string.h>
 #include "alarm.h"
 #include "utils.h"
+#include <math.h>
 
 // Estabelecimento da ligação de dados
 
@@ -291,6 +292,8 @@ int sendSupervisionFrame(int fd, Control control, Status status) {
 
 int llread(int fd, unsigned char* buffer){
 
+  usleep( T_PROP * pow(10,-6));
+
   int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
   int validDataField = TRUE;
   
@@ -390,7 +393,7 @@ int receiveInfoFrame(int fd) {
           iState = FLAG_RCV;
           i = 1;
         }
-        else if (ch == bcc1){
+        else if (ch == bcc1 && !generateBCC1Error()){
           iState = BCC_OK;
           dataLink->frame[i] = ch;
           i++;

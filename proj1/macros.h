@@ -18,14 +18,19 @@
 
 #define MAX_FILE           255
 
-#define PACKET_L1   2
-#define PACKET_V1   3
+#define PACKET_L1          2
+#define PACKET_V1          3   
+
+// Error Generation
+#define T_PROP             0   // Tempo de propagação em ms
+#define BCC1_ERROR         0   // Probabilidade de surgir erro no BCC1
+#define BCC2_ERROR         0   // Probabilidade de surgir erro no BCC2
 
 // Tipos de pacotes ao nível da Aplicação
 typedef enum PacketControl {
-    CTRL_PACKET_DATA = 0x01,
+    CTRL_PACKET_DATA =  0x01,
     CTRL_PACKET_START = 0x02,
-    CTRL_PACKET_END = 0x03
+    CTRL_PACKET_END =   0x03
 } PacketControl;
 
 typedef enum PacketParam {
@@ -38,7 +43,7 @@ typedef enum PacketParam {
 
 #define HEADER_SIZE        4
 #define DELIMIT_INFO_SIZE  6
-#define CONTROL_BYTE      2
+#define CONTROL_BYTE       2
 
 #define MAX_DATA_FRAME     PACKET_SIZE + DELIMIT_INFO_SIZE
 #define MAX_INFO_FRAME     ((MAX_DATA_FRAME + 1) * 2) + HEADER_SIZE + 1
