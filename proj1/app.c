@@ -11,7 +11,6 @@
 #include "utils.h"
 #include "app.h"
 
-
 int sendFile(char* port) {
 
     app.st = TRANSMITTER;
@@ -40,6 +39,8 @@ int sendFile(char* port) {
 
     // Tamanho do ficheiro
     fileDt.fileSize = sizeFile(fp);
+
+    showFileInfo(fileDt.fileName, fileDt.fileSize);
 
     // Constrói pacote de controlo indicando inicio da transmissão
     packetLength = controlPacket(packet, CTRL_PACKET_START, &fileDt);
@@ -195,7 +196,6 @@ int receiveFile(char* port){
         }
     }
 
-
     if (sizeFile(fp) != fileStartData.fileSize){
         perror("FileSize expected does not match actual fileSize");
         return -1;
@@ -215,6 +215,8 @@ int receiveFile(char* port){
         perror("Error, final file name doesn't match initial");
         return -1;
     }
+
+    showFileInfo(fileStartData.fileName, sizeFile(fp));
 
     if (llclose(app.fd, app.st) < 0){
         perror("Error llclose");

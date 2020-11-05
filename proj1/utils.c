@@ -177,3 +177,10 @@ int sizeFile(FILE *fp){
 
     return lsize;
 }
+
+void showFileInfo(char * fileName, int fileSize){
+    printf("\n");
+    printf("File Information:\n");
+    printf("> name: %s\n", fileName);
+    printf("> size: %d bytes\n", fileSize);
+}
