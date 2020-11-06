@@ -8,6 +8,7 @@
 #include "alarm.h"
 #include "utils.h"
 #include <math.h>
+#include "statistics.h"
 
 // Estabelecimento da ligação de dados
 

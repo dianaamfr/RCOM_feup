@@ -7,10 +7,11 @@
 #include "datalink.h"
 #include <signal.h>
 #include <string.h>
+#include <sys/time.h>
 #include "alarm.h"
 #include "utils.h"
 #include "app.h"
-#include <sys/time.h>
+#include "statistics.h"
 
 int sendFile(char* port) {
 
@@ -116,6 +117,11 @@ int receiveFile(char* port){
 
     app.st = RECEIVER;
 
+    if(registerStats() == -1){
+        perror("Error opening file stats");
+        return -1;
+    }
+
     if ((app.fd = llopen(port, app.st)) < 0){
         perror("Error llopen");
         return -1;
@@ -129,7 +135,7 @@ int receiveFile(char* port){
     // Iniciar medição do tempo
     struct timeval begin;
     gettimeofday(&begin, 0);
-
+    
 
     // Pacote de Controlo
     while(packetLength == 0){
@@ -223,8 +229,9 @@ int receiveFile(char* port){
         return -1;
     }
 
-    // Parar de medir o tempo e calcular tempo que passou
-    printElapsedTime(&begin);
+    // Salvar dados estatísticos
+    saveFileInfo(fileStartData.fileName, sizeFile(fp));
+    saveStats(&begin, sizeFile(fp));
 
     showFileInfo(fileStartData.fileName, sizeFile(fp));
 

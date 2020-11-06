@@ -79,14 +79,4 @@ int sizeFile(FILE *fp);
 */
 void showFileInfo(char * fileName, int fileSize);
 
-
-
-int generateBCC1Error();
-
-
-int generateBCC2Error();
-
-
-void printElapsedTime(struct timeval * begin);
-
 #endif
