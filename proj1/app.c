@@ -118,10 +118,10 @@ int receiveFile(char* port){
     app.st = RECEIVER;
 
     // Descomentar para registar estatisticas
-    if(registerStats() == -1){
+    /*if(registerStats() == -1){
         perror("Error opening file stats");
         return -1;
-    }
+    }*/
 
     if ((app.fd = llopen(port, app.st)) < 0){
         perror("Error llopen");
@@ -134,8 +134,8 @@ int receiveFile(char* port){
 
 
     // Iniciar medição do tempo -  Descomentar para registar estatisticas
-    struct timeval begin;
-    gettimeofday(&begin, 0);
+    /*struct timeval begin;
+    gettimeofday(&begin, 0);*/
 
     // Pacote de Controlo
     while(packetLength == 0){
@@ -210,8 +210,8 @@ int receiveFile(char* port){
     }
 
     // Descomentar para registar estatisticas
-    saveFileInfo(fileStartData.fileName, sizeFile(fp));
-    saveStats(&begin, sizeFile(fp));
+    /*saveFileInfo(fileStartData.fileName, sizeFile(fp));
+    saveStats(&begin, sizeFile(fp));*/
 
     if (sizeFile(fp) != fileStartData.fileSize){
         perror("FileSize expected does not match actual fileSize");

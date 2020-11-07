@@ -150,11 +150,9 @@ int validBcc2(unsigned char * dataField, int length) {
     bcc_calculated = createBCC(bcc_calculated, dataField[i]);
   }
 
-  if(bcc_calculated == bcc_received && generateBCC2Error() == FALSE /* && generateError == FALSE*/)
+  if(bcc_calculated == bcc_received && generateBCC2Error() == FALSE)
     return 0;
 
-  /*if(generateError == TRUE) generateError == FALSE;*/
-  
   return -1; // Erro no BCC2
 }
 

@@ -96,8 +96,9 @@ int initDataLink(char * port) {
 
 
 int openReceiver(int fd) {
-  // generateError = FALSE;
-  // signal(SIGINT, errorGenerator); // Para simular erros nos BCC ao pressionar CTRL-C
+  /*generateError = FALSE;
+  signal(SIGINT, errorGenerator); // Para simular erros nos BCC ao pressionar CTRL-C
+  */
 
   if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { // Espera por trama SET 
     perror("Error receiving SET frame");
@@ -394,9 +395,10 @@ int receiveInfoFrame(int fd) {
         else{
           iState = START; 
         } 
-        break;
-
+        
         /*if(generateError == TRUE) generateError = FALSE;*/
+
+        break;
 
       case BCC_OK:
         if(nr > 0){
@@ -426,8 +428,10 @@ int receiveInfoFrame(int fd) {
   i = byteDestuffing(i);
 
   int dataSize = i - DELIMIT_INFO_SIZE;
-  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
+  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1 /*&& generateError == FALSE*/)
     return dataSize;
+
+  /*if(generateError == TRUE) generateError = FALSE;*/
 
   return -1; // Erro no BCC2
 
@@ -752,7 +756,7 @@ int closeTransmitter(int fd){
   }
 
   printf("LinkLayer: wait for the receiver to read UA before restoring port configuration\n");
-  sleep(1);
+  usleep(500*pow(10,3));
 
   return 0;
 }
