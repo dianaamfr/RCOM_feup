@@ -72,4 +72,11 @@ int isInfoSequenceNumber(unsigned char byte);
  */
 int sizeFile(FILE *fp);
 
+/**
+ * Imprime na consola a informação sobre um ficheiro
+ * @param fileName nome do ficheiro
+ * @param fileSize tamanho do ficheiro em bytes
+*/
+void showFileInfo(char * fileName, int fileSize);
+
 #endif

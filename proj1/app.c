@@ -10,6 +10,7 @@
 #include "alarm.h"
 #include "utils.h"
 #include "app.h"
+#include "statistics.h"
 
 
 int sendFile(char* port) {
@@ -40,6 +41,8 @@ int sendFile(char* port) {
 
     // Tamanho do ficheiro
     fileDt.fileSize = sizeFile(fp);
+
+    showFileInfo(fileDt.fileName, fileDt.fileSize);
 
     // Constrói pacote de controlo indicando inicio da transmissão
     packetLength = controlPacket(packet, CTRL_PACKET_START, &fileDt);
@@ -114,6 +117,12 @@ int receiveFile(char* port){
 
     app.st = RECEIVER;
 
+    // Descomentar para registar estatisticas
+    if(registerStats() == -1){
+        perror("Error opening file stats");
+        return -1;
+    }
+
     if ((app.fd = llopen(port, app.st)) < 0){
         perror("Error llopen");
         return -1;
@@ -122,6 +131,11 @@ int receiveFile(char* port){
     printf("\n");
     unsigned char packet[PACKET_SIZE]; // Pacote
     int packetLength = 0;
+
+
+    // Iniciar medição do tempo -  Descomentar para registar estatisticas
+    struct timeval begin;
+    gettimeofday(&begin, 0);
 
     // Pacote de Controlo
     while(packetLength == 0){
@@ -195,6 +209,9 @@ int receiveFile(char* port){
         }
     }
 
+    // Descomentar para registar estatisticas
+    saveFileInfo(fileStartData.fileName, sizeFile(fp));
+    saveStats(&begin, sizeFile(fp));
 
     if (sizeFile(fp) != fileStartData.fileSize){
         perror("FileSize expected does not match actual fileSize");
@@ -215,6 +232,8 @@ int receiveFile(char* port){
         perror("Error, final file name doesn't match initial");
         return -1;
     }
+
+    showFileInfo(fileStartData.fileName, sizeFile(fp));
 
     if (llclose(app.fd, app.st) < 0){
         perror("Error llclose");
