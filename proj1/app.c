@@ -229,16 +229,16 @@ int receiveFile(char* port){
         return -1;
     }
 
-    // Salvar dados estatísticos
-    saveFileInfo(fileStartData.fileName, sizeFile(fp));
-    saveStats(&begin, sizeFile(fp));
-
     showFileInfo(fileStartData.fileName, sizeFile(fp));
 
     if (llclose(app.fd, app.st) < 0){
         perror("Error llclose");
         return -1;
     }
+
+    // Salvar dados estatísticos
+    saveFileInfo(fileStartData.fileName, sizeFile(fp));
+    saveStats(&begin, sizeFile(fp));
 
     return 0;
 }
