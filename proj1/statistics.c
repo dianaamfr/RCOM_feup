@@ -21,7 +21,7 @@ int registerStats(){
 
 
 void saveFileInfo(char * fileName, int fileSize){
-    fprintf(statsPtr, "File size: %d seconds\n", fileSize);
+    fprintf(statsPtr, "File size: %d bits\n", fileSize);
     fprintf(statsPtr, "File name: %s \n", fileName);
 }
 
@@ -37,13 +37,19 @@ void saveStats(struct timeval * begin, int bits){
     double elapsed = seconds + microseconds*1e-6;
     fprintf(statsPtr, "Tempo Total: %.6f seconds.\n", elapsed);
 
-    double R = bits / elapsed;
+    double R = bits*8 / elapsed;
     fprintf(statsPtr, "Débito recebido (R): %.6f bits/s\n", R);
 
     double S = R / BAUDRATE;
     fprintf(statsPtr, "Eficiência (S): %.6f.\n", S);
 
     fprintf(statsPtr, "Baudrate: %s\n", see_speed(BAUDRATE));
+
+    fprintf(statsPtr, "Block Size: %d\n", DATA_SIZE);
+
+    fprintf(statsPtr, "T prop: %f\n", T_PROP);
+
+    fprintf(statsPtr, "Bcc1 Error: %f   Bcc2 Error: %f\n", BCC1_ERROR , BCC2_ERROR);
 
     endStats();
 }
