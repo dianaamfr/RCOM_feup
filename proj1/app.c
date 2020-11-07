@@ -209,6 +209,11 @@ int receiveFile(char* port){
         }
     }
 
+    showFileInfo(fileStartData.fileName, sizeFile(fp));
+    // Salvar dados estatísticos
+    saveFileInfo(fileStartData.fileName, sizeFile(fp));
+    saveStats(&begin, sizeFile(fp));
+
     if (sizeFile(fp) != fileStartData.fileSize){
         perror("FileSize expected does not match actual fileSize");
         return -1;
@@ -229,16 +234,10 @@ int receiveFile(char* port){
         return -1;
     }
 
-    showFileInfo(fileStartData.fileName, sizeFile(fp));
-
     if (llclose(app.fd, app.st) < 0){
         perror("Error llclose");
         return -1;
     }
-
-    // Salvar dados estatísticos
-    saveFileInfo(fileStartData.fileName, sizeFile(fp));
-    saveStats(&begin, sizeFile(fp));
 
     return 0;
 }
