@@ -22,9 +22,9 @@
 #define PACKET_V1          3   
 
 // Error Generation
-#define T_PROP             0   // Tempo de propagação em ms
-#define BCC1_ERROR         0   // Probabilidade de surgir erro no BCC1
-#define BCC2_ERROR         0   // Probabilidade de surgir erro no BCC2
+#define T_PROP             0.0   // Tempo de propagação em ms
+#define BCC1_ERROR         0.0   // Probabilidade de surgir erro no BCC1
+#define BCC2_ERROR         0.0   // Probabilidade de surgir erro no BCC2
 
 // Tipos de pacotes ao nível da Aplicação
 typedef enum PacketControl {

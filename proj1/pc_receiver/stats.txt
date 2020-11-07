@@ -8,3 +8,13 @@ Block Size: 255
 T prop: 109804.216019
 Bcc1 Error: 109804.216019   Bcc2 Error: 15.000000
 
+File size: 10968 bits
+File name: pinguim.gif 
+Tempo Total: 0.017775 seconds.
+Debito recebido (R): 4936371.308017 bits/s
+Eficiencia (S): 329091.420534.
+Baudrate: B38400
+Block Size: 255
+T prop: 329091.420534
+Bcc1 Error: 329091.420534   Bcc2 Error: 15.000000
+

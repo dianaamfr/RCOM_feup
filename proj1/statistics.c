@@ -35,13 +35,13 @@ void saveStats(struct timeval * begin, int bits){
     long microseconds = end.tv_usec - begin->tv_usec;
 
     double elapsed = seconds + microseconds*1e-6;
-    fprintf(statsPtr, "Tempo Total: %.6f seconds.\n", elapsed);
+    fprintf(statsPtr, "Tempo Total: %.4f seconds.\n", elapsed);
 
-    double R = bits*8 / elapsed;
-    fprintf(statsPtr, "Débito recebido (R): %.6f bits/s\n", R);
+    double R = bits * 8.0 / elapsed;
+    fprintf(statsPtr, "Debito recebido (R): %.4f bits/s\n", R);
 
     double S = R / BAUDRATE;
-    fprintf(statsPtr, "Eficiência (S): %.6f.\n", S);
+    fprintf(statsPtr, "Eficiencia (S): %.4f.\n", S);
 
     fprintf(statsPtr, "Baudrate: %s\n", see_speed(BAUDRATE));
 
