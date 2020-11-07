@@ -16,6 +16,8 @@ void saveStats(struct timeval * begin, int bits);
 
 char *see_speed(speed_t speed);
 
+double get_speed();
+
 int endStats();
 
 

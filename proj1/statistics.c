@@ -40,7 +40,7 @@ void saveStats(struct timeval * begin, int bits){
     double R = bits * 8.0 / elapsed;
     fprintf(statsPtr, "Debito recebido (R): %.4f bits/s\n", R);
 
-    double S = R / BAUDRATE;
+    double S = R / get_speed();
     fprintf(statsPtr, "Eficiencia (S): %.4f.\n", S);
 
     fprintf(statsPtr, "Baudrate: %s\n", see_speed(BAUDRATE));
@@ -93,6 +93,46 @@ char *see_speed(speed_t speed) {
     default:       sprintf(SPEED, "unknown (%d)", (int) speed);
   }
   return SPEED;
+}
+
+double get_speed() {
+  double r;
+  switch (BAUDRATE) {
+    case B0:       r = 0;
+                   break;
+    case B50:      r = 50;
+                   break;
+    case B75:      r = 75;
+                   break;
+    case B110:     r = 110;
+                   break;
+    case B134:     r = 134;
+                   break;
+    case B150:     r = 150;
+                   break;
+    case B200:     r=200;
+                   break;
+    case B300:     r = 300;
+                   break;
+    case B600:     r = 600;
+                   break;
+    case B1200:    r = 1200;
+                   break;
+    case B1800:    r = 1800;
+                   break;
+    case B2400:    r = 2400;
+                   break;
+    case B4800:    r = 4800;
+                   break;
+    case B9600:    r = 9600;
+                   break;
+    case B19200:   r = 19200;
+                   break;
+    case B38400:   r = 38400;
+                   break;
+    default:       r = 38400;
+  }
+  return r;
 }
 
 
