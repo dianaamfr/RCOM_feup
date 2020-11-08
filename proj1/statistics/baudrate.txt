@@ -1,0 +1,220 @@
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1608 s
+Debito recebido (R): 27760.0695 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1609 s
+Debito recebido (R): 27759.0420 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1611 s
+Debito recebido (R): 27757.1716 bits/s
+Eficiencia (S): 0.7228
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1624 s
+Debito recebido (R): 27746.3666 bits/s
+Eficiencia (S): 0.7226
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+ile size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1609 s
+Debito recebido (R): 27758.8049 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.3142 s
+Debito recebido (R): 13896.2070 bits/s
+Eficiencia (S): 0.7238
+Baudrate: B19200
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.3148 s
+Debito recebido (R): 13895.0451 bits/s
+Eficiencia (S): 0.7237
+Baudrate: B19200
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.3146 s
+Debito recebido (R): 13895.4610 bits/s
+Eficiencia (S): 0.7237
+Baudrate: B19200
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.3144 s
+Debito recebido (R): 13895.8175 bits/s
+Eficiencia (S): 0.7237
+Baudrate: B19200
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.3144 s
+Debito recebido (R): 13895.8175 bits/s
+Eficiencia (S): 0.7237
+Baudrate: B19200
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 12.6198 s
+Debito recebido (R): 6952.8654 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B9600
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 12.6195 s
+Debito recebido (R): 6953.0422 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B9600
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 12.6199 s
+Debito recebido (R): 6952.8125 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B9600
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 12.6206 s
+Debito recebido (R): 6952.4654 bits/s
+Eficiencia (S): 0.7242
+Baudrate: B9600
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 12.6212 s
+Debito recebido (R): 6952.1189 bits/s
+Eficiencia (S): 0.7242
+Baudrate: B9600
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 25.2371 s
+Debito recebido (R): 3476.7812 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B4800
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 25.2371 s
+Debito recebido (R): 3476.7806 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B4800
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 25.2371 s
+Debito recebido (R): 3476.7802 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B4800
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 25.2372 s
+Debito recebido (R): 3476.7768 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B4800
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 25.2371 s
+Debito recebido (R): 3476.7808 bits/s
+Eficiencia (S): 0.7243
+Baudrate: B4800
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0

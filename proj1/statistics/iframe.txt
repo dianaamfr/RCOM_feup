@@ -1,0 +1,165 @@
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1608 s
+Debito recebido (R): 27760.0695 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1609 s
+Debito recebido (R): 27759.0420 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1611 s
+Debito recebido (R): 27757.1716 bits/s
+Eficiencia (S): 0.7228
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1624 s
+Debito recebido (R): 27746.3666 bits/s
+Eficiencia (S): 0.7226
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+ile size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1609 s
+Debito recebido (R): 27758.8049 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.0207 s
+Debito recebido (R): 29047.1006 bits/s
+Eficiencia (S): 0.7564
+Baudrate: B38400
+Tamanho dos Blocos: 512
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.0206 s
+Debito recebido (R): 29048.2641 bits/s
+Eficiencia (S): 0.7565
+Baudrate: B38400
+Tamanho dos Blocos: 512
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.0205 s
+Debito recebido (R): 29049.3797 bits/s
+Eficiencia (S): 0.7565
+Baudrate: B38400
+Tamanho dos Blocos: 512
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.0207 s
+Debito recebido (R): 29047.5237 bits/s
+Eficiencia (S): 0.7564
+Baudrate: B38400
+Tamanho dos Blocos: 512
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.0203 s
+Debito recebido (R): 29051.7939 bits/s
+Eficiencia (S): 0.7566
+Baudrate: B38400
+Tamanho dos Blocos: 512
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 2.9561 s
+Debito recebido (R): 29682.4321 bits/s
+Eficiencia (S): 0.7730
+Baudrate: B38400
+Tamanho dos Blocos: 1024
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 2.9556 s
+Debito recebido (R): 29686.9312 bits/s
+Eficiencia (S): 0.7731
+Baudrate: B38400
+Tamanho dos Blocos: 1024
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 2.9558 s
+Debito recebido (R): 29685.8565 bits/s
+Eficiencia (S): 0.7731
+Baudrate: B38400
+Tamanho dos Blocos: 1024
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 2.9559 s
+Debito recebido (R): 29683.9885 bits/s
+Eficiencia (S): 0.7730
+Baudrate: B38400
+Tamanho dos Blocos: 1024
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 2.9561 s
+Debito recebido (R): 29682.5727 bits/s
+Eficiencia (S): 0.7730
+Baudrate: B38400
+Tamanho dos Blocos: 1024
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0

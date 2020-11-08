@@ -7,20 +7,20 @@
 #include <string.h>
 #include "alarm.h"
 #include "utils.h"
+#include <math.h>
+#include "statistics.h"
 
 // Estabelecimento da ligação de dados
 
-// Para simular atrasos na receção da informação/Ruído ao pressionar CTRL-C
-/*void delayAnswer(int dummy) {
-  generateBccError = TRUE;
+// Para simular atrasos na receção da informação ao pressionar CTRL-C
+/*void delayAnswer(int sig) {
   sleep(4);
   return;
 }*/
 
-// Para simular erros nos BCC ao pressionar CTRL-C
-/*void bccError(int dummy) {
-  printf("changing bcc\n");
-  generateBccError = !generateBccError;
+// Para simular erros ao pressionar CTRL-C
+/*void errorGenerator(int sig) {
+  generateError = TRUE;
   return;
 }*/
 
@@ -96,8 +96,9 @@ int initDataLink(char * port) {
 
 
 int openReceiver(int fd) {
-  // generateBccError = FALSE;
-  // signal(SIGINT, bccError); // Para simular erros nos BCC ao pressionar CTRL-C
+  /*generateError = FALSE;
+  signal(SIGINT, errorGenerator); // Para simular erros nos BCC ao pressionar CTRL-C
+  */
 
   if(receiveSupervisionFrame(fd, SETUP, RECEIVER) == -1) { // Espera por trama SET 
     perror("Error receiving SET frame");
@@ -154,8 +155,6 @@ int receiveSupervisionFrame(int fd, Period period, Status status) {
   State state = START;
   unsigned char ch, bcc = 0;
   Control control;
-
-  //printf("Bytes read: \n");
 
   while(resend == FALSE) {
 
@@ -291,6 +290,8 @@ int sendSupervisionFrame(int fd, Control control, Status status) {
 
 int llread(int fd, unsigned char* buffer){
 
+  usleep( T_PROP * pow(10,3));
+
   int dataFieldSize = receiveInfoFrame(fd); // Recebe trama de informação
   int validDataField = TRUE;
   
@@ -333,14 +334,10 @@ int receiveInfoFrame(int fd) {
   int nr, i = 0; 
   int end = FALSE; 
 
-  //printf("Bytes read: \n");
-
   while(!end && i< MAX_INFO_FRAME) {
 
     if(iState != STOP){
       nr = read(fd, &ch, 1);
-      /*if(nr > 0)
-        printf("%4X",ch);*/
     }                  
 
     switch(iState) {
@@ -390,7 +387,7 @@ int receiveInfoFrame(int fd) {
           iState = FLAG_RCV;
           i = 1;
         }
-        else if (ch == bcc1){
+        else if (ch == bcc1 &&  generateBCC1Error() == FALSE /*&& generateError == FALSE*/){
           iState = BCC_OK;
           dataLink->frame[i] = ch;
           i++;
@@ -398,6 +395,9 @@ int receiveInfoFrame(int fd) {
         else{
           iState = START; 
         } 
+        
+        /*if(generateError == TRUE) generateError = FALSE;*/
+
         break;
 
       case BCC_OK:
@@ -428,8 +428,10 @@ int receiveInfoFrame(int fd) {
   i = byteDestuffing(i);
 
   int dataSize = i - DELIMIT_INFO_SIZE;
-  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1)
+  if(validBcc2(&dataLink->frame[HEADER_SIZE], dataSize + 1) != -1 /*&& generateError == FALSE*/)
     return dataSize;
+
+  /*if(generateError == TRUE) generateError = FALSE;*/
 
   return -1; // Erro no BCC2
 
@@ -619,10 +621,6 @@ int byteStuffing(int infoFieldLength) {
   }
 
   printf("LinkLayer: Stuffing complete.\n");
-  /*for(int i = 0; i < frameIdx; i++){
-    printf("%4X",dataLink->frame[i]);
-  }
-  printf("\n");*/
 
   free(aux);
   return frameIdx;
@@ -640,10 +638,6 @@ int byteDestuffing(int length){
   }
 
   printf("LinkLayer: Destuffing complete\n");
-  /*for(int i = 0; i < length; i++){
-    printf("%4X",dataLink->frame[i]);
-  }
-  printf("\n");*/
 
   return length;
 }
@@ -760,6 +754,9 @@ int closeTransmitter(int fd){
     perror("Error sending UA");
     return -1;
   }
+
+  printf("LinkLayer: wait for the receiver to read UA before restoring port configuration\n");
+  usleep(500*pow(10,3));
 
   return 0;
 }

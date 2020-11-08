@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "utils.h"
+#include "statistics.h"
 
 int validateArgs(int argc, char** argv) {
  
@@ -149,10 +150,10 @@ int validBcc2(unsigned char * dataField, int length) {
     bcc_calculated = createBCC(bcc_calculated, dataField[i]);
   }
 
-  if(bcc_calculated == bcc_received)
+  if(bcc_calculated == bcc_received && generateBCC2Error() == FALSE)
     return 0;
-  
-  return -1;
+
+  return -1; // Erro no BCC2
 }
 
 
@@ -176,4 +177,12 @@ int sizeFile(FILE *fp){
     rewind(fp);
 
     return lsize;
+}
+
+
+void showFileInfo(char * fileName, int fileSize){
+    printf("\n");
+    printf("File Information:\n");
+    printf("> name: %s\n", fileName);
+    printf("> size: %d bytes\n", fileSize);
 }

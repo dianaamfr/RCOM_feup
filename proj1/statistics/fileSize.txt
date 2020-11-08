@@ -1,0 +1,54 @@
+File size: 46636 bytes
+File name: test5.jpg
+Tempo Total: 13.3437 s
+Debito recebido (R): 27959.9136 bits/s
+Eficiencia (S): 0.7281
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 46636 bytes
+File name: test5.jpg
+Tempo Total: 13.3438 s
+Debito recebido (R): 27959.7502 bits/s
+Eficiencia (S): 0.7281
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 46636 bytes
+File name: test5.jpg
+Tempo Total: 13.3429 s
+Debito recebido (R): 27961.6340 bits/s
+Eficiencia (S): 0.7282
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 46636 bytes
+File name: test5.jpg
+Tempo Total: 13.3452 s
+Debito recebido (R): 27956.6578 bits/s
+Eficiencia (S): 0.7280
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 46636 bytes
+File name: test5.jpg
+Tempo Total: 13.3448 s
+Debito recebido (R): 27957.4518 bits/s
+Eficiencia (S): 0.7281
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0

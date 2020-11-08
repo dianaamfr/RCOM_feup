@@ -1,0 +1,162 @@
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1608 s
+Debito recebido (R): 27760.0695 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1609 s
+Debito recebido (R): 27759.0420 bits/s
+Eficiencia (S): 0.7229
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.1611 s
+Debito recebido (R): 27757.1716 bits/s
+Eficiencia (S): 0.7228
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 0.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 9.2190 s
+Debito recebido (R): 9517.7764 bits/s
+Eficiencia (S): 0.2479
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 200.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 9.2189 s
+Debito recebido (R): 9517.8270 bits/s
+Eficiencia (S): 0.2479
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 200.000000
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 9.2217 s
+Debito recebido (R): 9514.9815 bits/s
+Eficiencia (S): 0.2478
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 200.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.9197 s
+Debito recebido (R): 12680.3423 bits/s
+Eficiencia (S): 0.3302
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 150.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.9217 s
+Debito recebido (R): 12676.6436 bits/s
+Eficiencia (S): 0.3301
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 150.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 6.9184 s
+Debito recebido (R): 12682.7635 bits/s
+Eficiencia (S): 0.3303
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 150.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 4.6191 s
+Debito recebido (R): 18995.9700 bits/s
+Eficiencia (S): 0.4947
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 100.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 4.6189 s
+Debito recebido (R): 18996.5951 bits/s
+Eficiencia (S): 0.4947
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 100.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 4.6197 s
+Debito recebido (R): 18993.5809 bits/s
+Eficiencia (S): 0.4946
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 100.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.2819 s
+Debito recebido (R): 26735.7405 bits/s
+Eficiencia (S): 0.6962
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 50.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.2814 s
+Debito recebido (R): 26740.2055 bits/s
+Eficiencia (S): 0.6964
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 50.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
+
+File size: 10968 bytes
+File name: pinguim.gif
+Tempo Total: 3.2816 s
+Debito recebido (R): 26737.8587 bits/s
+Eficiencia (S): 0.6963
+Baudrate: B38400
+Tamanho dos Blocos: 255
+T prop: 50.000000
+P(erro no Bcc1): 0.000000   P(erro no Bcc2): 0.000000
+Erros Bcc1: 0   Erros Bcc2: 0
