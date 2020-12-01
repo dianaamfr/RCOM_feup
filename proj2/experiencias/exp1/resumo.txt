@@ -1,0 +1,39 @@
+Aula 1
+
+-- Configuração do terminal --
+Ligar gnu43 ao rs232 da esquerda (porta série de entrada)
+rs232 da direita (porta série de saida) à consola  
+Abrir consola da serial port, carregar enter e vai aparecer gnu-sw4
+--
+Na consola da porta série para formatar o switch
+
+en
+conf t
+no vlan 2-4094
+copy flash:gnu6-clean-startup-config
+reload
+
+No terminal para formatar o PC
+updateimage
+
+
+--- PONTO 2 ---
+gnu43:
+ifconfig eth0 172.16.40.1/24
+
+gnu64:
+ifconfig eth0 172.16.40.254/24
+wire
+
+--- Ponto 3 ---
+IP address: 172.16.40.1
+MAC address: (ether) ver na foto
+
+IP address: 172.16.40.254
+MAC address: (ether) ver na foto
+
+--- Ponto 4 ---
+ping 172.16.40.1/24 from gnu44
+ping 172.16.40.1/24 from gnu43
+
+
