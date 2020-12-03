@@ -175,7 +175,7 @@ int connectFTP(int port, const char * ipAddr){
 }
 
 int sendCommandFTP(ftp *ftp, char * command, char * cmd_args) {
-    printf("Sending Command: %s %s\n", command, cmd_args);
+    printf("\nSending Command: %s %s\n", command, cmd_args);
 
     char full_command[MAX_SIZE];
     int res = snprintf(full_command, MAX_SIZE, "%s %s\n", command, cmd_args);
@@ -212,34 +212,54 @@ void readReplyFTP(ftp * ftp, char * reply) {
 
 }
 
+char commandAndReplyFTP(ftp * ftp,  char * command, char * cmd_args){
+    
+    if (sendCommandFTP(ftp, command, cmd_args) == -1) {
+        return -1;
+    }
+    
+    char reply[MAX_SIZE];
+    char  reply_first_digit;
+
+    while (1) {
+
+        readReplyFTP(ftp, reply);
+        reply_first_digit = reply[0];
+        
+        switch (reply_first_digit) {
+            case POSITIVE_PRELIMINARY:               
+                break;
+            case TRANSIENT_NEGATIVE_COMPLETION:     // Try again  
+                if (sendCommandFTP(ftp, command, cmd_args) == -1) {
+                    return -1;
+                }
+                break;
+            case PERMANENT_NEGATIVE_COMPLETION:     // Error
+                close(ftp->control_socket);
+                return reply_first_digit;
+            default: 
+                return reply_first_digit;
+        }
+    }
+
+}
 
 int loginFTP(ftp * ftp, char * username, char * password){
     
-    int tries = 0, max_tries = 2;
-    while(tries < max_tries){
-         // Send FTP USER Command
-        if(sendCommandFTP(ftp, "USER", username) == -1){
-            fprintf(stderr,"Error sending username");
-            return -1;
-        }
+    char reply;
 
-        char reply[MAX_SIZE];
-        readReplyFTP(ftp, reply);
-
-        // Unexpected reply
-        if((reply[0] != POSITIVE_INTERMEDIATE) && 
-        (reply[0] == TRANSIENT_NEGATIVE_COMPLETION)){
-            return -1;
-        }
-        // POSITIVE_INTERMEDIATE - Waiting for password => proceed
-        else{
-            break;
-        }
-
-        // TRANSIENT_NEGATIVE_COMPLETION => try again
-        tries ++;
+    // Send username
+    if((reply = commandAndReplyFTP(ftp, "USER", username)) != POSITIVE_INTERMEDIATE){
+        fprintf(stderr,"Error sending username");
+        return -1;
     }
 
+    // Send password
+    if((reply = commandAndReplyFTP(ftp, "PASS", password)) != POSITIVE_COMPLETION){
+        fprintf(stderr,"Error sending username");
+        return -1;
+    }   
+    
     return 0;
 }
 
