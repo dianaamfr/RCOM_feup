@@ -48,7 +48,7 @@ void printArgs(ftp_args * args){
 }
 
 int readArgs(ftp_args * args, char * argv) {
-    
+    // TODO - Corrigir - não lê caminhos
     // ftp
     char * token = strtok(argv,":");
     if ((token == NULL) || (strcmp(token, "ftp") != 0)) {
@@ -71,7 +71,9 @@ int readArgs(ftp_args * args, char * argv) {
 
     if (strcmp(token, rest) == 0) {
         // user & pass not specified => anonymous
+        memset(args->user, 0, MAX_SIZE);
         strcpy(args->user, "anonymous");
+        memset(args->pass, 0, MAX_SIZE);
         strcpy(args->pass, "");
     
         memset(rest_copy, 0, MAX_SIZE);
@@ -100,6 +102,7 @@ int readArgs(ftp_args * args, char * argv) {
     if (token == NULL) {
         return -1;
     }
+    memset(args->host, 0, MAX_SIZE);
     strcpy(args->host, token);
 
     // file
@@ -108,13 +111,26 @@ int readArgs(ftp_args * args, char * argv) {
         return -1;
     }
 
-    char * last_bar = strrchr(token, '/');
+    // find the last / of the path
+    int last_bar = -1;
+    for(int i = strlen(token) - 1; i >= 0 ; i--) {
+        if(token[i] == '/'){
+            last_bar = i;
+            break;
+        }
+    }
 
-    if (last_bar != NULL) {
-        char * file_start_ptr = last_bar + 1;
+     printf("%d", last_bar);
 
-        strncpy(args->file_path, token, last_bar - token);
-        strcpy(args->file_name, file_start_ptr);
+    memset(args->file_path, 0, MAX_SIZE);
+    memset(args->file_name, 0, MAX_SIZE);
+
+    if (last_bar != -1) {
+        int file_name_len = strlen(token) - last_bar - 1;
+
+        strncpy(args->file_path, token, last_bar);
+        strncpy(args->file_name, &token[last_bar + 1], file_name_len);
+
     }
     // no bars => only filename
     else {
@@ -212,13 +228,12 @@ void readReplyFTP(ftp * ftp, char * reply) {
 
 }
 
-char commandAndReplyFTP(ftp * ftp,  char * command, char * cmd_args){
+char commandAndReplyFTP(ftp * ftp,  char * command, char * cmd_args, char * reply){
     
     if (sendCommandFTP(ftp, command, cmd_args) == -1) {
         return -1;
     }
     
-    char reply[MAX_SIZE];
     char  reply_first_digit;
 
     while (1) {
@@ -246,23 +261,53 @@ char commandAndReplyFTP(ftp * ftp,  char * command, char * cmd_args){
 
 int loginFTP(ftp * ftp, char * username, char * password){
     
-    char reply;
+    char reply[MAX_SIZE];
+    char reply_first_digit;
 
     // Send username
-    if((reply = commandAndReplyFTP(ftp, "USER", username)) != POSITIVE_INTERMEDIATE){
-        fprintf(stderr,"Error sending username");
+    if((reply_first_digit = commandAndReplyFTP(ftp, "USER", username, reply)) != POSITIVE_INTERMEDIATE){
+        fprintf(stderr,"Error sending username\n");
         return -1;
     }
 
     // Send password
-    if((reply = commandAndReplyFTP(ftp, "PASS", password)) != POSITIVE_COMPLETION){
-        fprintf(stderr,"Error sending username");
+    if((reply_first_digit = commandAndReplyFTP(ftp, "PASS", password, reply)) != POSITIVE_COMPLETION){
+        fprintf(stderr,"Error sending password\n");
         return -1;
     }   
     
     return 0;
 }
 
+int cwdFTP(ftp * ftp, char * path){
+
+    if(strlen(path) == 0) return 0;
+
+    char reply[MAX_SIZE];
+    char reply_first_digit;
+    
+
+    if((reply_first_digit = commandAndReplyFTP(ftp, "CWD", path, reply)) != POSITIVE_COMPLETION){
+        fprintf(stderr,"Error changing working directory\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int pasvFTP(ftp * ftp) {
+    
+    char reply[MAX_SIZE];
+    char reply_first_digit;
+
+	if ((reply_first_digit = commandAndReplyFTP(ftp, "PASV", "",reply)) != POSITIVE_COMPLETION) {
+		fprintf(stderr,"Error entering passive mode\n");
+		return -1;
+	}
+
+	printf("%s\n", reply);
+	return 0;
+}
 
 int main(int argc, char** argv){
 
@@ -270,7 +315,7 @@ int main(int argc, char** argv){
 
     // Read & Validate Arguments
     if (argc != 2 || (readArgs(&args, argv[1]) == -1)) {
-        fprintf(stderr, "Usage: %s %s\n", argv[0], "ftp://[<user>:<password>@]<host>/<url-path>");
+        fprintf(stderr, "Usage: %s %s\n", argv[0], "ftp://[<user>:<password>@]<host>/<url-path>\n");
         return -1;
     }
 
@@ -286,7 +331,7 @@ int main(int argc, char** argv){
     // Connect TCP socket to the address and FTP port
     ftp ftp;
     if((ftp.control_socket = connectFTP(FTP_PORT, args.ipAddr)) == -1){
-        fprintf(stderr, "connectFTP() error");
+        fprintf(stderr, "connectFTP() error\n");
         return -1;
     }
 
@@ -295,12 +340,23 @@ int main(int argc, char** argv){
     char serverReply[MAX_SIZE];
     readReplyFTP(&ftp, serverReply);
     if(serverReply[0] != POSITIVE_COMPLETION){
-        fprintf(stderr, "Connection failed");
+        fprintf(stderr, "Connection failed\n");
     }
 
+    // Login - USER & PASS
+    if(loginFTP(&ftp, args.user, args.pass) == -1){
+        return -1;
+    }
 
-    // Login
-    loginFTP(&ftp, args.user, args.pass);
+    // Change Working Directory - CWD
+    if(cwdFTP(&ftp, args.file_path) == -1){
+        return -1;
+    }
+
+    // Passive Mode - PASV
+	if (pasvFTP(&ftp)) {
+		return -1;
+	}
 
     return 0;
 
