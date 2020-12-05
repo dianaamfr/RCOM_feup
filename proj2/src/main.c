@@ -13,7 +13,7 @@
 
 int	sockfd;
 
-#define MAX_SIZE 256
+#define MAX_SIZE 1024
 #define FTP_PORT 21
 
 typedef struct ftp_args {
@@ -243,8 +243,6 @@ char commandAndReplyFTP(ftp * ftp,  char * command, char * cmd_args, char * repl
         reply_first_digit = reply[0];
         
         switch (reply_first_digit) {
-            case POSITIVE_PRELIMINARY:               
-                break;
             case TRANSIENT_NEGATIVE_COMPLETION:     // Try again  
                 if (sendCommandFTP(ftp, command, cmd_args) == -1) {
                     return -1;
@@ -266,7 +264,8 @@ int loginFTP(ftp * ftp, char * username, char * password){
     char reply_first_digit;
 
     // Send username
-    if((reply_first_digit = commandAndReplyFTP(ftp, "USER", username, reply)) != POSITIVE_INTERMEDIATE){
+    reply_first_digit = commandAndReplyFTP(ftp, "USER", username, reply);
+    if((reply_first_digit != POSITIVE_INTERMEDIATE) && (reply_first_digit != POSITIVE_COMPLETION)){
         fprintf(stderr,"Error sending username\n");
         return -1;
     }
