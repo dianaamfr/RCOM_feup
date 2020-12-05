@@ -7,6 +7,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 int	sockfd;
 
@@ -48,7 +51,7 @@ void printArgs(ftp_args * args){
 }
 
 int readArgs(ftp_args * args, char * argv) {
-    // TODO - Corrigir - não lê caminhos
+
     // ftp
     char * token = strtok(argv,":");
     if ((token == NULL) || (strcmp(token, "ftp") != 0)) {
@@ -120,8 +123,6 @@ int readArgs(ftp_args * args, char * argv) {
         }
     }
 
-     printf("%d", last_bar);
-
     memset(args->file_path, 0, MAX_SIZE);
     memset(args->file_name, 0, MAX_SIZE);
 
@@ -185,7 +186,7 @@ int connectFTP(int port, const char * ipAddr){
 		return -1;
 	}
 
-    printf("Connection phase completed\n\n");
+    printf("Connected to socket with success\n\n");
 
     return sockfd; // Returns control socket fd on success
 }
@@ -295,6 +296,45 @@ int cwdFTP(ftp * ftp, char * path){
     return 0;
 }
 
+int saveFile(ftp * ftp, char * file_name){
+    int fd;
+
+    if ((fd = open(file_name, O_WRONLY | O_CREAT, 0666)) < 0) {
+		fprintf(stderr, "Error creating the file\n");
+		return -1;
+	}
+
+    char buffer[MAX_SIZE];
+    int nr, nw;
+    while ((nr = read(ftp->data_socket, buffer, MAX_SIZE))) {
+		if ((nw = write(fd, buffer, nr)) < 0) {
+			fprintf(stderr,"Error writing file\n");
+			return -1;
+		}
+	}
+
+    if(close(fd) < 0){
+        fprintf(stderr,"Error closing file\n");
+        return -1;
+    }
+
+    if(close(ftp->data_socket) < 0){
+        fprintf(stderr,"Error closing data socket\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/*
+Na resposta, o servidor envia 6 bytes (exemplo: 193,136,28,12,19,91) com o seguinte significado:
+- 193,136,28,12 endereço IP do servidor,
+- 19,91 porta em que o servidor se encontra à espera de ligação.
+A interpretação destes dois bytes deverá ser feita daseguinte forma:
+porta = 19 * 256 + 91 = 4955
+*/
+
 int pasvFTP(ftp * ftp) {
     
     char reply[MAX_SIZE];
@@ -305,9 +345,62 @@ int pasvFTP(ftp * ftp) {
 		return -1;
 	}
 
-	printf("%s\n", reply);
+    char * token;
+    int pasvReply[6];
+    memset(pasvReply,0, 6 * sizeof(int));
+    
+    if ((token = strtok(reply,"(")) == NULL) {
+        return -1;
+    }
+
+    // parse reply
+    int i = 0;
+    while(i < 6) {
+
+        if(i == 5) {
+            token = strtok(NULL, ").");
+        }
+        else{
+            token = strtok(NULL, ",");
+        }
+
+        pasvReply[i] = atoi(token);
+        i++;
+    }
+
+    // parse server ip
+    char serverIP[MAX_SIZE];
+	if ((sprintf(serverIP, "%d.%d.%d.%d", pasvReply[0], pasvReply[1], pasvReply[2], pasvReply[3])) < 0) {
+		fprintf(stderr, "Error building IP address in passive mode\n");
+		return -1;
+	}
+
+	// parse port
+	int port = pasvReply[4] * 256 + pasvReply[5];
+
+    // create new socket
+    if ((ftp->data_socket = connectFTP(port, serverIP)) == -1) {
+        return -1;
+    }
+
 	return 0;
 }
+
+/*
+This command causes the server-DTP to transfer a copy of the
+file, specified in the pathname, to the server- or user-DTP
+at the other end of the data connection.  The status and
+contents of the file at the server site shall be unaffected.
+*/
+int retrFTP(ftp * ftp, char * file_name) {
+    
+    char reply[MAX_SIZE];
+    if(commandAndReplyFTP(ftp, "RETR", file_name, reply) < 0){
+        printf("Error sending Command Retr\n");
+        return -1;
+    }
+	return 0;
+}   
 
 int main(int argc, char** argv){
 
@@ -354,9 +447,20 @@ int main(int argc, char** argv){
     }
 
     // Passive Mode - PASV
-	if (pasvFTP(&ftp)) {
+	if (pasvFTP(&ftp) == -1) {
 		return -1;
 	}
+
+    // RETRIEVE (RETR)
+    if(retrFTP(&ftp, args.file_name) == -1){
+        return -1;
+    }
+
+    // Save file
+    if(saveFile(&ftp, args.file_name) == -1){
+        return -1;
+    }
+
 
     return 0;
 
