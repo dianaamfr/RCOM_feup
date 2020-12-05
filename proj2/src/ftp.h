@@ -34,13 +34,13 @@ int connectFTP(int port, const char * ipAddr);
 void readReplyFTP(int sock_fd, char * reply);
 
 
+int commandAndReplyFTP(int sock_fd,  char * command, char * cmd_args, char * reply);
+
+
 int loginFTP(int sock_fd, char * username, char * password);
 
 
 int sendCommandFTP(int sock_fd, char * command, char * cmd_args);
-
-
-char commandAndReplyFTP(int sock_fd,  char * command, char * cmd_args, char * reply);
 
 
 int cwdFTP(int sock_fd, char * path);
@@ -68,4 +68,10 @@ int retrFTP(int control_sock_fd, char * file_name);
 int saveFile(int data_sock_fd, char * file_name);
 
 
+/*
+This command terminates a USER and if file transfer is not
+in progress, the server closes the control connection.  If
+file transfer is in progress, the connection will remain
+open for result response and the server will then close it.
+*/
 int quitFTP(int control_sock_fd);

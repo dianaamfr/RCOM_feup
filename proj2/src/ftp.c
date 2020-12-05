@@ -13,14 +13,14 @@
 #include "ftp.h"
 
 void printArgs(ftp_args * args){
-    printf("****************************\n");
-    printf("User: %s\n", args->user);
-    printf("Password: %s\n", args->pass);
-    printf("Host: %s\n", args->host);
-    printf("IP Address: %s\n", args->ipAddr);
-    printf("File path: %s\n", args->file_path);
-    printf("File name: %s\n\n", args->file_name);
-    printf("****************************\n");
+    printf("\n**************************************************\n");
+    printf("\tUser: %s\n", args->user);
+    printf("\tPassword: %s\n", args->pass);
+    printf("\tHost: %s\n", args->host);
+    printf("\tIP Address: %s\n", args->ipAddr);
+    printf("\tFile path: %s\n", args->file_path);
+    printf("\tFile name: %s\n\n", args->file_name);
+    printf("***************************************************\n\n");
 }
 
 
@@ -34,15 +34,20 @@ int readArgs(ftp_args * args, char * argv) {
 
     // rest of argv
     token = strtok(NULL, "\0");
-    char rest[MAX_SIZE];
+    char * rest = (char*)malloc(sizeof(char)*MAX_SIZE);
     strcpy(rest, token);
+    rest[strlen(rest)] = '\0';
 
     // user
-    char rest_copy[MAX_SIZE];
+    // token changes original string so we use a copy and keep the original when we need it later for comparinsons
+    char * rest_copy = (char*)malloc(sizeof(char)*MAX_SIZE);
     strcpy(rest_copy, rest);
     token = strtok(rest_copy, ":");
 
-    if (token == NULL || (token[0] != '/') || (token[1] != '/') || (strlen(token) < 2)) {
+
+    if (token == NULL || (strlen(token) < 3) || (token[0] != '/') || (token[1] != '/')) {
+        free(rest_copy);
+        free(rest);
         return -1;
     }
 
@@ -57,26 +62,42 @@ int readArgs(ftp_args * args, char * argv) {
         strcpy(rest_copy, &rest[2]);
         memset(rest, 0, MAX_SIZE);
         strcpy(rest, rest_copy);
- 
     }
     else {
         // user
         strcpy(args->user, &token[2]);
+        
+        token = strtok(NULL, "\0");
+        char * rest_copy2 = (char*)malloc(sizeof(char)*MAX_SIZE);
+        memset(rest, 0, MAX_SIZE);
+        strcpy(rest_copy2, token);
+        strcpy(rest, rest_copy2); // Stores the args that come after :
+
         // pass
-        token = strtok(NULL, "@");
-        if (token == NULL || (strlen(token) == 0)) {
+        token = strtok(rest_copy2, "@"); // token stores the password
+
+        if (token == NULL || strcmp(token, rest) == 0 || (strlen(token) == 0)) {
+            free(rest_copy);
+            free(rest_copy2);
+            free(rest);
             return -1;
         }
+
         strcpy(args->pass, token);
 
         token = strtok(NULL, "\0");
         memset(rest, 0, MAX_SIZE);
-        strcpy(rest, token);
+        strcpy(rest, token); // save the args tha come after the password
+
+        free(rest_copy);
+        free(rest_copy2);
     }
 
     // host
     token = strtok(rest, "/");    
+    printf("%s", token);
     if (token == NULL) {
+        free(rest);
         return -1;
     }
     memset(args->host, 0, MAX_SIZE);
@@ -85,6 +106,7 @@ int readArgs(ftp_args * args, char * argv) {
     // file
     token = strtok(NULL, "\0");
     if (token == NULL) {
+        free(rest);
         return -1;
     }
 
@@ -115,9 +137,8 @@ int readArgs(ftp_args * args, char * argv) {
 
     // set ip to empty string for now
     strcpy(args->ipAddr,"");
-
-    // printArgs(args);
     
+    free(rest);
     return 0;
 }
 
@@ -187,24 +208,67 @@ void readReplyFTP(int control_sock_fd, char * reply) {
 }
 
 
+int commandAndReplyFTP(int control_sock_fd,  char * command, char * cmd_args, char * reply){
+    
+    if (sendCommandFTP(control_sock_fd, command, cmd_args) == -1) {
+        return -1;
+    }
+    
+    char  reply_digit;
+
+    while (1) {
+
+        readReplyFTP(control_sock_fd, reply);
+        reply_digit = reply[0];
+        
+        switch (reply_digit) {
+            case POSITIVE_PRELIMINARY:
+                if(strcmp(command,"RETR") == 0)
+                    return 0;
+                break;
+            case POSITIVE_INTERMEDIATE:
+                if(strcmp(command,"USER") == 0)
+                    return 0;
+                close(control_sock_fd);
+                return -1;
+            case TRANSIENT_NEGATIVE_COMPLETION:     // Try again  
+                if (sendCommandFTP(control_sock_fd, command, cmd_args) == -1) {
+                    close(control_sock_fd);
+                    return -1;
+                }
+                break;
+            case PERMANENT_NEGATIVE_COMPLETION:     // Error
+                close(control_sock_fd);
+                return -1;
+            default: 
+                return 0;
+        }
+    }
+
+}
+
+
 int loginFTP(int control_sock_fd, char * username, char * password){
     
-    char reply[MAX_SIZE];
-    char reply_first_digit;
+    char * reply = (char*)malloc(sizeof(char) * MAX_SIZE);
+    int valid_reply;
 
     // Send username
-    reply_first_digit = commandAndReplyFTP(control_sock_fd, "USER", username, reply);
-    if((reply_first_digit != POSITIVE_INTERMEDIATE) && (reply_first_digit != POSITIVE_COMPLETION)){
+    if((valid_reply = commandAndReplyFTP(control_sock_fd, "USER", username, reply)) == -1){
         fprintf(stderr,"Error sending username\n");
+        free(reply);
         return -1;
     }
 
     // Send password
-    if((reply_first_digit = commandAndReplyFTP(control_sock_fd, "PASS", password, reply)) != POSITIVE_COMPLETION){
+    if((valid_reply = commandAndReplyFTP(control_sock_fd, "PASS", password, reply)) == -1){
         fprintf(stderr,"Error sending password\n");
+        free(reply);
         return -1;
     }   
     
+    free(reply);
+
     return 0;
 }
 
@@ -229,60 +293,32 @@ int sendCommandFTP(int control_sock_fd, char * command, char * cmd_args) {
 }
 
 
-char commandAndReplyFTP(int control_sock_fd,  char * command, char * cmd_args, char * reply){
-    
-    if (sendCommandFTP(control_sock_fd, command, cmd_args) == -1) {
-        return -1;
-    }
-    
-    char  reply_first_digit;
-
-    while (1) {
-
-        readReplyFTP(control_sock_fd, reply);
-        reply_first_digit = reply[0];
-        
-        switch (reply_first_digit) {
-            case TRANSIENT_NEGATIVE_COMPLETION:     // Try again  
-                if (sendCommandFTP(control_sock_fd, command, cmd_args) == -1) {
-                    return -1;
-                }
-                break;
-            case PERMANENT_NEGATIVE_COMPLETION:     // Error
-                close(control_sock_fd);
-                return reply_first_digit;
-            default: 
-                return reply_first_digit;
-        }
-    }
-
-}
-
-
 int cwdFTP(int control_sock_fd, char * path){
 
     if(strlen(path) == 0) return 0;
 
-    char reply[MAX_SIZE];
-    char reply_first_digit;
-    
+    char * reply = (char*)malloc(sizeof(char) * MAX_SIZE);
+    int valid_reply;
 
-    if((reply_first_digit = commandAndReplyFTP(control_sock_fd, "CWD", path, reply)) != POSITIVE_COMPLETION){
+    if((valid_reply = commandAndReplyFTP(control_sock_fd, "CWD", path, reply)) == -1){
         fprintf(stderr,"Error changing working directory\n");
+        free(reply);
         return -1;
     }
 
+    free(reply);
     return 0;
 }
 
 
 int pasvFTP(int control_sock_fd) {
     
-    char reply[MAX_SIZE];
-    char reply_first_digit;
+    char * reply = (char*)malloc(sizeof(char) * MAX_SIZE);
+    int valid_reply;
 
-	if ((reply_first_digit = commandAndReplyFTP(control_sock_fd, "PASV", "",reply)) != POSITIVE_COMPLETION) {
+	if ((valid_reply = commandAndReplyFTP(control_sock_fd, "PASV", "", reply)) == -1) {
 		fprintf(stderr,"Error entering passive mode\n");
+        free(reply);
 		return -1;
 	}
 
@@ -313,6 +349,7 @@ int pasvFTP(int control_sock_fd) {
     char serverIP[MAX_SIZE];
 	if ((sprintf(serverIP, "%d.%d.%d.%d", pasvReply[0], pasvReply[1], pasvReply[2], pasvReply[3])) < 0) {
 		fprintf(stderr, "Error building IP address in passive mode\n");
+        free(reply);
 		return -1;
 	}
 
@@ -322,20 +359,26 @@ int pasvFTP(int control_sock_fd) {
     // create new socket
     int data_sock_fd;
     if ((data_sock_fd = connectFTP(port, serverIP)) == -1) {
+        free(reply);
         return -1;
     }
 
+    free(reply);
 	return data_sock_fd;
 }
 
 
 int retrFTP(int control_sock_fd, char * file_name) {
     
-    char reply[MAX_SIZE];
-    if(commandAndReplyFTP(control_sock_fd, "RETR", file_name, reply) < 0){
+    char * reply = (char*)malloc(sizeof(char) * MAX_SIZE);
+    int valid_reply;
+    if((valid_reply = commandAndReplyFTP(control_sock_fd, "RETR", file_name, reply)) == -1){
         printf("Error sending Command Retr\n");
+        free(reply);
         return -1;
     }
+
+    free(reply);
 	return 0;
 }  
 
@@ -348,14 +391,17 @@ int saveFile(int data_sock_fd, char * file_name){
 		return -1;
 	}
 
-    char buffer[MAX_SIZE];
+    char * buffer = (char*)malloc(sizeof(char) * MAX_SIZE);
     int nr, nw;
     while ((nr = read(data_sock_fd, buffer, MAX_SIZE))) {
 		if ((nw = write(fd, buffer, nr)) < 0) {
 			fprintf(stderr,"Error writing file\n");
+            free(buffer);
 			return -1;
 		}
 	}
+
+    free(buffer);
 
     if(close(fd) < 0){
         fprintf(stderr,"Error closing file\n");
@@ -368,12 +414,15 @@ int saveFile(int data_sock_fd, char * file_name){
 
 int quitFTP(int control_sock_fd) {
 	
-	char reply[MAX_SIZE];
-    if(commandAndReplyFTP(control_sock_fd, "QUIT", "", reply) != POSITIVE_COMPLETION){
+	char * reply = (char*)malloc(sizeof(char) * MAX_SIZE);
+    int valid_reply;
+    if((valid_reply = commandAndReplyFTP(control_sock_fd, "QUIT", "", reply)) == -1){
+        free(reply);
         printf("Error sending Command QUIT\n");
         return -1;
     }
 
+    free(reply);
 	return 0;
 }
 

@@ -1,0 +1,6 @@
+Testar ligado à VPN com:
+
+./download ftp://rcom:rcom@netlab1.fe.up.pt/files/pic2.png
+./download ftp://rcom:rcom@netlab1.fe.up.pt/files/pic1.jpg
+./download ftp://rcom:rcom@netlab1.fe.up.pt/pipe.txt
+./download ftp://@netlab1.fe.up.pt/pub.txt
