@@ -23,7 +23,11 @@ int main(int argc, char** argv){
     printArgs(&args);
 
 
-    // Connect TCP socket to the address and FTP port
+    /* 
+    Connect TCP control socket to the address and FTP port
+    The control connection is used for the transfer of commands, which describe the
+    functions to be performed, and the replies to these commands
+    */
     int control_sock_fd; 
     if((control_sock_fd = connectFTP(FTP_PORT, args.ipAddr)) == -1){
         fprintf(stderr, "connectFTP() error\n");
@@ -55,6 +59,7 @@ int main(int argc, char** argv){
 
     int data_sock_fd; 
     // Passive Mode - PASV
+    // Files are transferred only via the data connection.  
 	if ((data_sock_fd = pasvFTP(control_sock_fd)) == -1) {
         fprintf(stderr, "Passive Mode failed\n");
 		return -1;

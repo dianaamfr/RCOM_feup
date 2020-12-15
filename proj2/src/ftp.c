@@ -146,11 +146,13 @@ int readArgs(ftp_args * args, char * argv) {
 int getIPFromHostName(char * host_name, char * ipAddr){
 
     struct hostent *he;
+    // Returns a structure of  type  hostent  for the given host name
     if((he = gethostbyname(host_name)) == NULL){
         herror("gethostbyname");
         return -1;
     }   
 
+    // Converte o endereço Internet de 32 bits com ordenamento de rede para dotted decimal notation
     strcpy(ipAddr, inet_ntoa(*((struct in_addr *)he->h_addr)));
 
     return 0;
@@ -222,26 +224,28 @@ int commandAndReplyFTP(int control_sock_fd,  char * command, char * cmd_args, ch
         reply_digit = reply[0];
         
         switch (reply_digit) {
-            case POSITIVE_PRELIMINARY:
+            case POSITIVE_PRELIMINARY: // (1)
+                // If the command was RETR some valid reponses are 125 and 150
                 if(strcmp(command,"RETR") == 0)
                     return 0;
                 break;
-            case POSITIVE_INTERMEDIATE:
+            case POSITIVE_INTERMEDIATE: // (3)
+                // If the command was USER a valid response is 331 User name okay, need password
                 if(strcmp(command,"USER") == 0)
                     return 0;
                 close(control_sock_fd);
                 return -1;
-            case TRANSIENT_NEGATIVE_COMPLETION:     // Try again  
+            case TRANSIENT_NEGATIVE_COMPLETION:     // (4) Try again
                 if (sendCommandFTP(control_sock_fd, command, cmd_args) == -1) {
                     close(control_sock_fd);
                     return -1;
                 }
                 break;
-            case PERMANENT_NEGATIVE_COMPLETION:     // Error
+            case PERMANENT_NEGATIVE_COMPLETION:     // Error(5)
                 close(control_sock_fd);
                 return -1;
             default: 
-                return 0;
+                return 0; // POSITIVE COMPLETION (2)
         }
     }
 
