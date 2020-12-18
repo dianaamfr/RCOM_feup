@@ -95,7 +95,6 @@ int readArgs(ftp_args * args, char * argv) {
 
     // host
     token = strtok(rest, "/");    
-    printf("%s", token);
     if (token == NULL) {
         free(rest);
         return -1;
